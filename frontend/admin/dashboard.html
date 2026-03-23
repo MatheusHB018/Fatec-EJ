@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Administrativo | EJ Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+<body class="h-screen overflow-hidden bg-slate-50 font-[Inter] text-slate-800 antialiased" data-page="admin-dashboard">
+  <div class="flex h-screen overflow-hidden bg-slate-50">
+    <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col">
+      <div class="px-6 py-6">
+        <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo Empresa Júnior FATEC" class="h-14 w-auto object-contain" />
+        <h1 class="mt-4 text-3xl font-extrabold tracking-tight">
+          <span class="text-slate-900"> Admin</span>
+        </h1>
+      </div>
+
+      <div class="px-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Menu</div>
+
+      <nav id="admin-sidebar-menu" class="mt-3 flex-1 space-y-1 px-2">
+        <button type="button" data-section-target="dashboard" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+          Dashboard
+        </button>
+        <button type="button" data-section-target="sobre" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-regular fa-circle-question w-5 text-center"></i>
+          Sobre
+        </button>
+        <button type="button" data-section-target="equipe" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-solid fa-users w-5 text-center"></i>
+          Equipe
+        </button>
+        <button type="button" data-section-target="servicos" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-solid fa-briefcase w-5 text-center"></i>
+          Serviços
+        </button>
+        <button type="button" data-section-target="pilares" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-solid fa-layer-group w-5 text-center"></i>
+          Pilares
+        </button>
+        <button type="button" data-section-target="projetos" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-regular fa-folder-open w-5 text-center"></i>
+          Projetos
+        </button>
+        <button type="button" data-section-target="editais" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-regular fa-file-lines w-5 text-center"></i>
+          Editais
+        </button>
+        <button type="button" data-section-target="contato" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-regular fa-address-book w-5 text-center"></i>
+          Contato
+        </button>
+        <button type="button" data-section-target="mensagens" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-regular fa-envelope w-5 text-center"></i>
+          Mensagens
+        </button>
+        <button type="button" data-section-target="usuarios" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-regular fa-user w-5 text-center"></i>
+          Usuários
+        </button>
+        <button type="button" data-section-target="loja" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-solid fa-bag-shopping w-5 text-center"></i>
+          Loja
+        </button>
+        <button type="button" data-section-target="configuracoes" class="admin-menu-item flex w-full items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-left font-semibold text-red-800 transition hover:bg-red-50">
+          <i class="fa-solid fa-gear w-5 text-center"></i>
+          Configurações
+        </button>
+      </nav>
+
+      <div class="mt-auto border-t border-gray-200 p-4">
+        <a href="../index.html" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-500 transition hover:bg-slate-50 hover:text-red-800">
+          <i class="fa-solid fa-arrow-left w-5 text-center"></i>
+          Voltar ao site
+        </a>
+        <!-- href ajustado: admin/ → ../ para voltar à raiz do frontend -->
+      </div>
+    </aside>
+
+    <div class="flex min-w-0 flex-1 flex-col">
+      <header class="border-b border-gray-200 bg-white">
+        <div class="flex h-20 items-center justify-between px-6 lg:px-8">
+          <div class="flex items-center gap-4">
+            <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-slate-600 lg:hidden">
+              <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="hidden h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-slate-600 lg:inline-flex">
+              <i class="fa-regular fa-window-maximize"></i>
+            </div>
+            <p class="text-base font-medium text-slate-500">Painel Administrativo</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="hidden items-center gap-3 sm:flex">
+              <div class="h-10 w-10 rounded-full bg-red-100 text-red-800 flex items-center justify-center font-semibold">MB</div>
+              <div class="text-right">
+                <p id="admin-user-name" class="text-sm font-semibold text-slate-800">Administrador</p>
+                <p id="admin-user-email" class="text-xs text-slate-500">Equipe EJ FATEC</p>
+              </div>
+            </div>
+            <button id="logout-button" type="button" class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800"><!-- login.html está na mesma pasta admin/ -->
+              Sair
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 overflow-y-auto p-8">
+        <div class="mx-auto max-w-5xl">
+          <section data-admin-section="dashboard" class="admin-section space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
+              <p class="mt-2 text-slate-500">Visão geral do sistema com métricas, atividade recente e gráficos.</p>
+            </div>
+
+            <div id="dashboard-metrics" class="grid gap-5 md:grid-cols-2 xl:grid-cols-4"></div>
+
+            <div class="grid gap-6 xl:grid-cols-2">
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h2 class="text-xl font-bold text-slate-900">Contatos por Dia</h2>
+                    <p class="text-sm text-slate-500">Últimos 7 dias</p>
+                  </div>
+                </div>
+                <div class="mt-6 h-80">
+                  <canvas id="contacts-chart"></canvas>
+                </div>
+              </section>
+
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h2 class="text-xl font-bold text-slate-900">Status dos Produtos</h2>
+                    <p class="text-sm text-slate-500">Ativos x inativos</p>
+                  </div>
+                </div>
+                <div class="mt-6 h-80">
+                  <canvas id="products-chart"></canvas>
+                </div>
+              </section>
+            </div>
+
+            <div class="grid gap-6 xl:grid-cols-2">
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900">Contatos Recentes</h2>
+                <div id="recent-contacts" class="mt-6 space-y-3"></div>
+              </section>
+
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900">Produtos Recentes</h2>
+                <div id="recent-products" class="mt-6 space-y-3"></div>
+              </section>
+            </div>
+          </section>
+
+          <section data-admin-section="sobre" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Sobre</h1>
+              <p class="mt-2 text-slate-500">Resumo do conteúdo institucional público.</p>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Edição Completa da Seção Sobre</h2>
+              <form id="about-form" class="mt-6 space-y-5">
+                <div>
+                  <label for="about-subtitle-input" class="mb-2 block text-sm font-semibold text-slate-700">Subtítulo (ex: Quem Somos)</label>
+                  <input id="about-subtitle-input" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <div>
+                  <label for="about-title-input" class="mb-2 block text-sm font-semibold text-slate-700">Título</label>
+                  <input id="about-title-input" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <div>
+                  <label for="about-summary-input" class="mb-2 block text-sm font-semibold text-slate-700">Resumo</label>
+                  <textarea id="about-summary-input" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div>
+                  <label for="about-mission-input" class="mb-2 block text-sm font-semibold text-slate-700">Missão</label>
+                  <textarea id="about-mission-input" rows="3" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div>
+                  <label for="about-vision-input" class="mb-2 block text-sm font-semibold text-slate-700">Visão</label>
+                  <textarea id="about-vision-input" rows="3" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div>
+                  <label for="about-values-input" class="mb-2 block text-sm font-semibold text-slate-700">Valores (um por linha)</label>
+                  <textarea id="about-values-input" rows="5" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div>
+                  <label for="about-professor-input" class="mb-2 block text-sm font-semibold text-slate-700">Professor Responsável</label>
+                  <input id="about-professor-input" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <div>
+                  <label for="about-mandate-input" class="mb-2 block text-sm font-semibold text-slate-700">Mandato</label>
+                  <input id="about-mandate-input" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <div>
+                  <label for="about-image-url-input" class="mb-2 block text-sm font-semibold text-slate-700">Foto do Sobre (URL da imagem)</label>
+                  <input id="about-image-url-input" type="url" placeholder="https://..." class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <p id="about-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                  <i class="fa-solid fa-check"></i>
+                  Salvar Sobre
+                </button>
+              </form>
+            </div>
+          </section>
+
+          <section data-admin-section="equipe" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Equipe</h1>
+              <p class="mt-2 text-slate-500">Membros cadastrados na área pública.</p>
+            </div>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Adicionar / Editar Membro</h2>
+
+              <form id="team-form" class="mt-6 space-y-5">
+                <input id="team-id" type="hidden" />
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="team-name" class="mb-2 block text-sm font-semibold text-slate-700">Nome</label>
+                    <input id="team-name" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                  </div>
+
+                  <div>
+                    <label for="team-role" class="mb-2 block text-sm font-semibold text-slate-700">Cargo</label>
+                    <input id="team-role" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                  </div>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-3">
+                  <div>
+                    <label for="team-initials" class="mb-2 block text-sm font-semibold text-slate-700">Iniciais (opcional)</label>
+                    <input id="team-initials" type="text" maxlength="10" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+
+                  <div>
+                    <label for="team-order" class="mb-2 block text-sm font-semibold text-slate-700">Ordem de exibição</label>
+                    <input id="team-order" type="number" min="0" value="0" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+
+                  <div class="flex items-end">
+                    <label class="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
+                      <input id="team-active" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-red-800 focus:ring-red-200" />
+                      <span class="text-sm font-semibold text-slate-700">Ativo no site</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="team-photo-url" class="mb-2 block text-sm font-semibold text-slate-700">Foto (URL da imagem)</label>
+                  <input id="team-photo-url" type="url" placeholder="https://..." class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <p id="team-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                <div class="flex flex-wrap gap-3">
+                  <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                    <i class="fa-solid fa-check"></i>
+                    Salvar Membro
+                  </button>
+
+                  <button id="team-cancel-edit" type="button" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800">
+                    Cancelar Edição
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <div id="team-list" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+          </section>
+
+          <section data-admin-section="servicos" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Serviços</h1>
+              <p class="mt-2 text-slate-500">Serviços ativos exibidos no site.</p>
+            </div>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Adicionar / Editar Serviço</h2>
+
+              <form id="service-form" class="mt-6 space-y-5">
+                <input id="service-id" type="hidden" />
+
+                <div>
+                  <label for="service-title" class="mb-2 block text-sm font-semibold text-slate-700">Título</label>
+                  <input id="service-title" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                </div>
+
+                <div>
+                  <label for="service-description" class="mb-2 block text-sm font-semibold text-slate-700">Descrição</label>
+                  <textarea id="service-description" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="service-order" class="mb-2 block text-sm font-semibold text-slate-700">Ordem de exibição</label>
+                    <input id="service-order" type="number" min="0" value="0" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+
+                  <div class="flex items-end">
+                    <label class="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
+                      <input id="service-active" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-red-800 focus:ring-red-200" />
+                      <span class="text-sm font-semibold text-slate-700">Ativo no site</span>
+                    </label>
+                  </div>
+                </div>
+
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Ícone padrão aplicado automaticamente: Serviço/Trabalho</p>
+                <p id="service-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                <div class="flex flex-wrap gap-3">
+                  <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                    <i class="fa-solid fa-check"></i>
+                    Salvar Serviço
+                  </button>
+
+                  <button id="service-cancel-edit" type="button" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800">
+                    Cancelar Edição
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <div id="services-list" class="grid gap-4 md:grid-cols-2"></div>
+          </section>
+
+          <section data-admin-section="pilares" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Pilares</h1>
+              <p class="mt-2 text-slate-500">Pilares institucionais do sistema.</p>
+            </div>
+            <div id="pillars-list" class="grid gap-4 md:grid-cols-3"></div>
+          </section>
+
+          <section data-admin-section="projetos" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Projetos</h1>
+              <p class="mt-2 text-slate-500">Gerencie os projetos publicados na home (incluindo imagem).</p>
+            </div>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Adicionar / Editar Projeto</h2>
+
+              <form id="project-form" class="mt-6 space-y-5">
+                <input id="project-id" type="hidden" />
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="project-title" class="mb-2 block text-sm font-semibold text-slate-700">Título</label>
+                    <input id="project-title" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                  </div>
+
+                  <div>
+                    <label for="project-category" class="mb-2 block text-sm font-semibold text-slate-700">Categoria</label>
+                    <input id="project-category" type="text" placeholder="Web, Mobile..." class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+                </div>
+
+                <div>
+                  <label for="project-description" class="mb-2 block text-sm font-semibold text-slate-700">Descrição</label>
+                  <textarea id="project-description" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div>
+                  <label for="project-technologies" class="mb-2 block text-sm font-semibold text-slate-700">Tecnologias (separadas por vírgula)</label>
+                  <input id="project-technologies" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <div>
+                  <label for="project-image-url" class="mb-2 block text-sm font-semibold text-slate-700">Imagem do projeto (URL)</label>
+                  <input id="project-image-url" type="url" placeholder="https://..." class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="project-order" class="mb-2 block text-sm font-semibold text-slate-700">Ordem de exibição</label>
+                    <input id="project-order" type="number" min="0" value="0" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+
+                  <div class="flex items-end">
+                    <label class="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
+                      <input id="project-active" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-red-800 focus:ring-red-200" />
+                      <span class="text-sm font-semibold text-slate-700">Ativo no site</span>
+                    </label>
+                  </div>
+                </div>
+
+                <p id="project-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                <div class="flex flex-wrap gap-3">
+                  <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                    <i class="fa-solid fa-check"></i>
+                    Salvar Projeto
+                  </button>
+
+                  <button id="project-cancel-edit" type="button" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800">
+                    Cancelar Edição
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <div id="projects-list" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+          </section>
+
+          <section data-admin-section="editais" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Editais</h1>
+              <p class="mt-2 text-slate-500">Gerencie editais e o link da publicação oficial.</p>
+            </div>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Adicionar / Editar Edital</h2>
+
+              <form id="edital-form" class="mt-6 space-y-5">
+                <input id="edital-id" type="hidden" />
+
+                <div>
+                  <label for="edital-title" class="mb-2 block text-sm font-semibold text-slate-700">Título</label>
+                  <input id="edital-title" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                </div>
+
+                <div>
+                  <label for="edital-description" class="mb-2 block text-sm font-semibold text-slate-700">Descrição</label>
+                  <textarea id="edital-description" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="edital-status-input" class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
+                    <input id="edital-status-input" type="text" placeholder="Em breve" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+
+                  <div>
+                    <label for="edital-period" class="mb-2 block text-sm font-semibold text-slate-700">Período de inscrição</label>
+                    <input id="edital-period" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+                </div>
+
+                <div>
+                  <label for="edital-file-url" class="mb-2 block text-sm font-semibold text-slate-700">Link oficial do edital</label>
+                  <input id="edital-file-url" type="url" placeholder="https://..." class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="edital-order" class="mb-2 block text-sm font-semibold text-slate-700">Ordem de exibição</label>
+                    <input id="edital-order" type="number" min="0" value="0" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+
+                  <div class="flex items-end">
+                    <label class="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
+                      <input id="edital-active" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-red-800 focus:ring-red-200" />
+                      <span class="text-sm font-semibold text-slate-700">Ativo no site</span>
+                    </label>
+                  </div>
+                </div>
+
+                <p id="edital-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                <div class="flex flex-wrap gap-3">
+                  <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                    <i class="fa-solid fa-check"></i>
+                    Salvar Edital
+                  </button>
+
+                  <button id="edital-cancel-edit" type="button" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800">
+                    Cancelar Edição
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <div id="editals-list" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+          </section>
+
+          <section data-admin-section="contato" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Contato</h1>
+              <p class="mt-2 text-slate-500">Edite os dados públicos da seção de contato.</p>
+            </div>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Edição da Seção Contato</h2>
+
+              <form id="contact-section-form" class="mt-6 space-y-5">
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="contact-section-title" class="mb-2 block text-sm font-semibold text-slate-700">Título da seção</label>
+                    <input id="contact-section-title" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                  </div>
+
+                  <div>
+                    <label for="contact-section-subtitle" class="mb-2 block text-sm font-semibold text-slate-700">Subtítulo</label>
+                    <input id="contact-section-subtitle" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+                </div>
+
+                <div>
+                  <label for="contact-section-content" class="mb-2 block text-sm font-semibold text-slate-700">Texto de apoio</label>
+                  <textarea id="contact-section-content" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="contact-section-email" class="mb-2 block text-sm font-semibold text-slate-700">E-mail público</label>
+                    <input id="contact-section-email" type="email" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+
+                  <div>
+                    <label for="contact-section-phone" class="mb-2 block text-sm font-semibold text-slate-700">Telefone público</label>
+                    <input id="contact-section-phone" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+                </div>
+
+                <p id="contact-section-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                  <i class="fa-solid fa-check"></i>
+                  Salvar Contato
+                </button>
+              </form>
+            </div>
+          </section>
+
+          <section data-admin-section="mensagens" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Mensagens</h1>
+              <p class="mt-2 text-slate-500">Mensagens recebidas pelo formulário do site.</p>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div class="mb-4 flex items-center justify-between gap-3">
+                <h2 class="text-xl font-bold text-slate-900">Mensagens Recebidas</h2>
+                <p id="contact-messages-status" class="hidden rounded-xl px-4 py-2 text-sm font-medium"></p>
+              </div>
+              <div id="contact-messages-list" class="space-y-4"></div>
+            </div>
+          </section>
+
+          <section data-admin-section="usuarios" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Usuários</h1>
+              <p class="mt-2 text-slate-500">Lista de todos os usuários cadastrados no sistema.</p>
+            </div>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Adicionar / Editar Usuário</h2>
+
+              <form id="user-form" class="mt-6 space-y-5">
+                <input id="user-id" type="hidden" />
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="user-name" class="mb-2 block text-sm font-semibold text-slate-700">Nome</label>
+                    <input id="user-name" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                  </div>
+
+                  <div>
+                    <label for="user-email" class="mb-2 block text-sm font-semibold text-slate-700">E-mail</label>
+                    <input id="user-email" type="email" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                  </div>
+                </div>
+
+                <div>
+                  <label for="user-password" class="mb-2 block text-sm font-semibold text-slate-700">Senha <span class="text-slate-400">(obrigatória no cadastro / opcional na edição)</span></label>
+                  <input id="user-password" type="password" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <p id="user-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                <div class="flex flex-wrap gap-3">
+                  <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                    <i class="fa-solid fa-check"></i>
+                    Salvar Usuário
+                  </button>
+
+                  <button id="user-cancel-edit" type="button" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800">
+                    Cancelar Edição
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div id="users-list" class="space-y-4"></div>
+            </div>
+          </section>
+
+          <section data-admin-section="loja" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Loja</h1>
+              <p class="mt-2 text-slate-500">Produtos cadastrados no backend.</p>
+            </div>
+            <div id="products-list" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+          </section>
+
+          <section data-admin-section="configuracoes" class="admin-section hidden space-y-8">
+            <div>
+              <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Configurações</h1>
+              <p class="mt-2 text-slate-500">Edite os textos gerais do site.</p>
+            </div>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+              <form id="admin-settings-form" class="space-y-6">
+              <div>
+                <label for="hero-title" class="mb-2 block text-sm font-semibold text-slate-700">Título do Hero</label>
+                <input id="hero-title" type="text" value="Excelência acadêmica que impulsiona o mercado regional" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+              </div>
+
+              <div>
+                <label for="hero-subtitle" class="mb-2 block text-sm font-semibold text-slate-700">Subtítulo do Hero</label>
+                <textarea id="hero-subtitle" rows="3" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100">Soluções tecnológicas de alta qualidade desenvolvidas por talentos da Fatec Presidente Prudente, com rigor técnico e preços acessíveis.</textarea>
+              </div>
+
+              <div>
+                <label for="sobre-ej" class="mb-2 block text-sm font-semibold text-slate-700">Sobre a EJ</label>
+                <textarea id="sobre-ej" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100">A Empresa Júnior da Fatec de Presidente Prudente é formada por alunos comprometidos com a entrega de soluções tecnológicas reais para empresas da região. Combinamos o conhecimento acadêmico com a prática de mercado.</textarea>
+              </div>
+
+              <div class="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">E-mail</label>
+                  <input id="contact-email" type="email" value="contato@empresajuniorfatec.com.br" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+
+                <div>
+                  <label for="telefone" class="mb-2 block text-sm font-semibold text-slate-700">Telefone</label>
+                  <input id="contact-phone" type="text" value="(18) 3222-0000" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                </div>
+              </div>
+
+              <div>
+                <label for="endereco" class="mb-2 block text-sm font-semibold text-slate-700">Endereço</label>
+                <input id="endereco" type="text" value="Fatec Presidente Prudente - R. Cav. Luiz Antonio de Moura Andrade, s/n" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+              </div>
+
+              <div>
+                <p id="dashboard-status" class="hidden mb-4 rounded-xl px-4 py-3 text-sm font-medium"></p>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                  <i class="fa-solid fa-check"></i>
+                  Salvar alterações
+                </button>
+              </div>
+              </form>
+            </section>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="../assets/js/admin.js"></script>
+</body>
+</html>

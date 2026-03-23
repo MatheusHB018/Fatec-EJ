@@ -1,0 +1,117 @@
+:root {
+  --primary: #991b1b;
+  --primary-dark: #7f1d1d;
+  --primary-soft: #fef2f2;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border: #cbd5e1;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Inter", "Roboto", ui-sans-serif, system-ui, sans-serif;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #fff;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: box-shadow 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.14);
+}
+
+.btn-sm {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.btn-outline {
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.btn-outline:hover {
+  background-color: var(--primary-soft);
+}
+
+.btn-secondary {
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  background-color: #fff;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background-color: var(--primary-soft);
+}
+
+.tab-active,
+.tab-inactive {
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.tab-active {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+.tab-inactive {
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background-color: #fff;
+}
+
+.tab-inactive:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.form-control {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  outline: none;
+  color: var(--text-main);
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px #fee2e2;
+}
+
+.form-control::placeholder {
+  color: #94a3b8;
+}
+
+.gestao-placeholder {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(127, 29, 29, 0.45);
+  background-color: rgba(127, 29, 29, 0.18);
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  color: #fecaca;
+}
