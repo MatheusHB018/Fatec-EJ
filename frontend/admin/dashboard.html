@@ -157,6 +157,12 @@
                 <h2 class="text-xl font-bold text-slate-900">Produtos Recentes</h2>
                 <div id="recent-products" class="mt-6 space-y-3"></div>
               </section>
+              <!-- Painel de gerenciamento rápido de produtos (visível no dashboard) -->
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900">Produtos Cadastrados (Gerenciador Rápido)</h2>
+                <p class="mt-2 text-sm text-slate-500">Lista rápida para editar/excluir sem sair do dashboard.</p>
+                <div id="dashboard-products-manager" class="mt-6 space-y-4"></div>
+              </section>
             </div>
           </section>
 
@@ -613,7 +619,144 @@
               <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Loja</h1>
               <p class="mt-2 text-slate-500">Produtos cadastrados no backend.</p>
             </div>
-            <div id="products-list" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+            <div class="grid gap-6 lg:grid-cols-2">
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900">Adicionar / Editar Produto</h2>
+                <form id="product-form" class="mt-6 space-y-5">
+                  <input id="product-id" type="hidden" />
+
+                  <div>
+                    <label for="product-name" class="mb-2 block text-sm font-semibold text-slate-700">Nome</label>
+                    <input id="product-name" type="text" required class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800" />
+                    <p id="product-name-error" class="mt-1 text-sm text-red-600 hidden" aria-live="polite"></p>
+                  </div>
+
+                  <div>
+                    <label for="product-description" class="mb-2 block text-sm font-semibold text-slate-700">Especificação</label>
+                    <textarea id="product-description" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800"></textarea>
+                    <p id="product-description-error" class="mt-1 text-sm text-red-600 hidden" aria-live="polite"></p>
+                  </div>
+
+                  <div class="grid gap-5 md:grid-cols-3">
+                    <div>
+                      <label for="product-price" class="mb-2 block text-sm font-semibold text-slate-700">Preço (R$)</label>
+                      <input id="product-price" type="number" step="0.01" min="0" required class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800" />
+                      <p id="product-price-error" class="mt-1 text-sm text-red-600 hidden" aria-live="polite"></p>
+                    </div>
+
+                    <!-- cupom fields removed as requested -->
+
+                    <div>
+                      <label for="product-category" class="mb-2 block text-sm font-semibold text-slate-700">Categoria</label>
+                      <select id="product-category" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800">
+                        <option value="vetuario">Vestuário</option>
+                        <option value="acessorio">Acessório</option>
+                      </select>
+                      <p id="product-category-error" class="mt-1 text-sm text-red-600 hidden" aria-live="polite"></p>
+                    </div>
+                    <div>
+                      <label for="product-image" class="mb-2 block text-sm font-semibold text-slate-700">Imagem (opcional)</label>
+                      <input id="product-image" type="file" accept="image/*" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800" />
+                      <p id="product-image-error" class="mt-1 text-sm text-red-600 hidden" aria-live="polite"></p>
+                    </div>
+                    <!-- Preview panel (fixed next to form, visible by default) -->
+                    <div id="product-image-preview-panel" class="mt-4 w-full sm:w-48 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                      <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+                        <strong class="text-sm">Pré-visualização</strong>
+                        <button id="product-image-preview-close" type="button" class="text-slate-500 hover:text-slate-700">×</button>
+                      </div>
+                      <div class="p-3 flex items-center justify-center h-32">
+                        <img id="product-image-preview" src="" alt="Pré-visualização da imagem do produto" class="w-full h-32 object-contain rounded hidden" />
+                        <div id="product-image-preview-placeholder" class="text-sm text-slate-400">Sem imagem selecionada</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Sizes availability -->
+                  <!-- Stock for accessories -->
+                  <div id="product-stock-section" class="mt-4 hidden">
+                    <label for="product-stock-quantity" class="block text-sm font-semibold text-slate-700 mb-2">Quantidade em estoque</label>
+                    <input id="product-stock-quantity" type="number" min="0" value="0" class="w-32 rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-800" />
+                    <p id="product-stock-error" class="mt-1 text-sm text-red-600 hidden" aria-live="polite"></p>
+                  </div>
+
+                  <!-- Sizes availability -->
+                  <div id="product-sizes-section" class="mt-4">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tamanhos disponíveis</label>
+                    <div id="product-sizes" class="grid gap-3 md:grid-cols-3">
+                      <!-- each size: checkbox + quantity -->
+                      <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2">
+                          <input id="size-pp" type="checkbox" class="h-4 w-4" />
+                          <span class="text-sm font-medium">PP</span>
+                        </label>
+                        <input id="qty-pp" type="number" min="0" value="0" class="w-20 rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-800" />
+                      </div>
+
+                      <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2">
+                          <input id="size-p" type="checkbox" class="h-4 w-4" />
+                          <span class="text-sm font-medium">P</span>
+                        </label>
+                        <input id="qty-p" type="number" min="0" value="0" class="w-20 rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-800" />
+                      </div>
+
+                      <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2">
+                          <input id="size-m" type="checkbox" class="h-4 w-4" />
+                          <span class="text-sm font-medium">M</span>
+                        </label>
+                        <input id="qty-m" type="number" min="0" value="0" class="w-20 rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-800" />
+                      </div>
+
+                      <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2">
+                          <input id="size-g" type="checkbox" class="h-4 w-4" />
+                          <span class="text-sm font-medium">G</span>
+                        </label>
+                        <input id="qty-g" type="number" min="0" value="0" class="w-20 rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-800" />
+                      </div>
+
+                      <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2">
+                          <input id="size-gg" type="checkbox" class="h-4 w-4" />
+                          <span class="text-sm font-medium">GG</span>
+                        </label>
+                        <input id="qty-gg" type="number" min="0" value="0" class="w-20 rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-800" />
+                      </div>
+
+                      <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2">
+                          <input id="size-xg" type="checkbox" class="h-4 w-4" />
+                          <span class="text-sm font-medium">XG</span>
+                        </label>
+                        <input id="qty-xg" type="number" min="0" value="0" class="w-20 rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-800" />
+                      </div>
+                    </div>
+                    <p id="product-sizes-error" class="mt-2 text-sm text-red-600 hidden" aria-live="polite"></p>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <label class="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
+                      <input id="product-active" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-red-800" />
+                      <span class="text-sm font-semibold text-slate-700">Ativo no site</span>
+                    </label>
+                  </div>
+
+                  <p id="product-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                  <div class="flex flex-wrap gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-6 py-3 text-sm font-semibold text-white">Salvar Produto</button>
+                    <button id="product-cancel-edit" type="button" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-slate-600">Cancelar</button>
+                  </div>
+                </form>
+              </section>
+
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900">Produtos Cadastrados</h2>
+                <div id="products-list" class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-1"></div>
+              </section>
+            </div>
           </section>
 
           <section data-admin-section="configuracoes" class="admin-section hidden space-y-8">

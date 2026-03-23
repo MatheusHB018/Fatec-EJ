@@ -23,6 +23,21 @@ function getProjectRoot() {
 const PROJECT_ROOT = getProjectRoot();
 const API_BASE = `${PROJECT_ROOT}/backend/public/api`;
 
+// Resolve media URLs returned by the API to a URL reachable from the frontend.
+// If backend returns paths like "/storage/...", prepend the project root + backend/public
+function resolveMediaUrl(url) {
+  if (!url) return '';
+  // already absolute
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  // API might return '/storage/...' (Laravel public storage). Build full path relative to project root.
+  if (url.startsWith('/storage/')) {
+    return `${PROJECT_ROOT}/backend/public${url}`;
+  }
+  // fallback: if url is already prefixed with backend/public, ensure project root present
+  if (url.startsWith('/backend/public/')) return `${PROJECT_ROOT}${url}`;
+  return url;
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -215,7 +230,7 @@ function renderHomeContent(payload) {
 
   if (aboutImage && aboutImagePlaceholder) {
     if (about.image_url) {
-      aboutImage.src = about.image_url;
+      aboutImage.src = resolveMediaUrl(about.image_url);
       aboutImage.classList.remove('hidden');
       aboutImagePlaceholder.classList.add('hidden');
     } else {
@@ -229,7 +244,7 @@ function renderHomeContent(payload) {
     teamGrid.innerHTML = payload.team.map((member) => `
       <article class="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 text-center">
         ${member.photo_url
-          ? `<img src="${escapeHtml(member.photo_url)}" alt="${escapeHtml(member.name)}" class="mx-auto h-16 w-16 rounded-full object-cover border border-slate-200" />`
+          ? `<img src="${escapeHtml(resolveMediaUrl(member.photo_url))}" alt="${escapeHtml(member.name)}" class="mx-auto h-16 w-16 rounded-full object-cover border border-slate-200" />`
           : `<div class="mx-auto h-16 w-16 rounded-full bg-red-100 text-red-800 flex items-center justify-center text-xl font-bold">${escapeHtml(member.initials || member.name.split(' ').map((piece) => piece[0]).slice(0, 2).join(''))}</div>`}
         <p class="mt-4 font-semibold text-red-800">${escapeHtml(member.role)}</p>
         <p class="text-slate-600">${escapeHtml(member.name)}</p>
@@ -270,7 +285,7 @@ function renderHomeContent(payload) {
         .join('');
 
       const projectImage = project.image_url
-        ? `<img src="${escapeHtml(project.image_url)}" alt="${escapeHtml(project.title)}" class="h-40 w-full object-cover" />`
+        ? `<img src="${escapeHtml(resolveMediaUrl(project.image_url))}" alt="${escapeHtml(project.title)}" class="h-40 w-full object-cover" />`
         : `<div class="h-40 bg-rose-50 flex items-center justify-center">
             <span class="h-10 w-10 rounded-xl bg-rose-100 text-red-800 flex items-center justify-center"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
           </div>`;
@@ -427,7 +442,9 @@ function renderProducts(products) {
       <article class="group rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
         <button type="button" class="w-full text-left" data-product-id="${product.id}">
           <div class="relative h-52 bg-slate-100 flex items-center justify-center text-slate-400">
-            <i class="fa-solid fa-image text-4xl"></i>
+            ${product.image_url
+              ? `<img src="${escapeHtml(resolveMediaUrl(product.image_url))}" alt="${escapeHtml(product.name)}" class="w-full h-52 object-cover" />`
+              : `<i class="fa-solid fa-image text-4xl"></i>`}
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/45 transition-colors flex items-center justify-center">
               <span class="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-800">
                 <i class="fa-regular fa-eye"></i>

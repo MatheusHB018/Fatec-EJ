@@ -1,5 +1,6 @@
 function getProjectRoot() {
   if (window.location.protocol === 'file:') {
+    // quando aberto via file://, usar localhost como fallback
     return 'http://localhost/Fatec-EJ';
   }
 
@@ -30,6 +31,17 @@ let projects = [];
 let editals = [];
 let contactMessages = [];
 let users = [];
+
+// Resolve media URLs returned by the API to a URL reachable from the frontend/admin pages.
+function resolveMediaUrlAdmin(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/storage/')) {
+    return `${getProjectRoot()}/backend/public${url}`;
+  }
+  if (url.startsWith('/backend/public/')) return `${getProjectRoot()}${url}`;
+  return url;
+}
 
 function getToken() {
   return localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -201,7 +213,7 @@ function renderTeamManagerList() {
       <div class="flex items-start justify-between gap-4">
         <div class="flex items-center gap-4">
           ${member.photo_url
-            ? `<img src="${member.photo_url}" alt="${member.name}" class="h-14 w-14 rounded-full object-cover border border-gray-200" />`
+                    ? `<img src="${resolveMediaUrlAdmin(member.photo_url)}" alt="${member.name}" class="h-14 w-14 rounded-full object-cover border border-gray-200" />`
             : `<div class="h-14 w-14 rounded-full bg-red-100 text-red-800 flex items-center justify-center font-bold">${member.initials || '--'}</div>`}
           <div>
             <p class="font-semibold text-slate-900">${member.name}</p>
@@ -287,7 +299,7 @@ function renderProjectManagerList() {
   container.innerHTML = projects.map((project) => `
     <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       ${project.image_url
-        ? `<img src="${project.image_url}" alt="${project.title}" class="h-36 w-full rounded-xl border border-gray-200 object-cover" />`
+        ? `<img src="${resolveMediaUrlAdmin(project.image_url)}" alt="${project.title}" class="h-36 w-full rounded-xl border border-gray-200 object-cover" />`
         : '<div class="h-36 w-full rounded-xl border border-gray-200 bg-slate-50 flex items-center justify-center text-slate-400"><i class="fa-regular fa-image text-2xl"></i></div>'}
       <h3 class="mt-4 text-xl font-bold text-slate-900">${project.title}</h3>
       <p class="mt-2 text-sm text-slate-500">${project.description || '-'}</p>
@@ -327,6 +339,531 @@ function fillProjectForm(project) {
 async function reloadProjects() {
   projects = await adminFetch('/admin/projects');
   renderProjectManagerList();
+}
+
+/* -----------------------
+   Product manager
+   ----------------------- */
+async function reloadProducts() {
+  const data = await adminFetch('/admin/products');
+  // apiResource returns paginated object in admin index; normalize to items array
+  products = Array.isArray(data) ? data : (data.data || data.items || []);
+  renderProductsList();
+  renderRecentProducts(products.slice(0, 4));
+  // render quick manager on dashboard
+  renderProductsManagerOnDashboard();
+}
+
+// Renderiza um gerenciador rápido de produtos dentro do Dashboard (lista curta)
+function renderProductsManagerOnDashboard() {
+  const container = document.getElementById('dashboard-products-manager');
+  if (!container) return;
+
+  if (!products || products.length === 0) {
+    container.innerHTML = `
+      <article class="rounded-xl border border-gray-200 p-4 bg-white">
+        <h3 class="text-sm font-semibold text-slate-900">Nenhum produto cadastrado</h3>
+        <p class="mt-1 text-sm text-slate-500">Você pode criar um produto rapidamente.</p>
+        <div class="mt-3">
+          <button id="product-create-button-dashboard" class="inline-flex items-center gap-2 rounded-lg bg-red-800 px-3 py-2 text-sm font-semibold text-white">Criar Produto</button>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  // mostrar até 5 produtos no gerenciador rápido
+  const slice = products.slice(0, 5);
+  container.innerHTML = slice.map((p) => `
+    <article data-product-card-id="${p.id}" class="rounded-xl border border-gray-200 p-4 cursor-pointer hover:shadow-sm transition bg-white">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="font-semibold text-slate-900">${p.name}</p>
+          <p class="text-sm text-slate-500">${formatPrice(p.price)}</p>
+          <p class="text-xs text-slate-500">Categoria: <strong>${p.category || '-'}</strong></p>
+          <p class="mt-1 text-xs uppercase tracking-wide ${p.is_active ? 'text-emerald-600' : 'text-slate-400'}">${p.is_active ? 'ATIVO' : 'INATIVO'}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-slate-400">${formatDate(p.created_at)}</p>
+          <div class="mt-3 flex flex-col gap-2">
+            <button data-product-action="edit" data-product-id="${p.id}" class="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"> <i class="fa-solid fa-pen-to-square"></i> Editar</button>
+            <button data-product-action="delete" data-product-id="${p.id}" class="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-slate-100"> <i class="fa-solid fa-trash"></i> Excluir</button>
+          </div>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
+function renderProductsList() {
+  const container = document.getElementById('products-list');
+  if (!container) return;
+
+  if (!products || products.length === 0) {
+    container.innerHTML = `
+      <article class="rounded-xl border border-gray-200 p-6 bg-white">
+        <h3 class="text-lg font-bold text-slate-900">Nenhum produto cadastrado</h3>
+        <p class="mt-2 text-sm text-slate-500">Adicione produtos para que apareçam na loja.</p>
+        <div class="mt-4">
+          <button id="product-create-button" class="inline-flex items-center gap-2 rounded-lg bg-red-800 px-4 py-2 text-sm font-semibold text-white">Criar Produto</button>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  container.innerHTML = products.map((p) => `
+    <article data-product-card-id="${p.id}" class="rounded-xl border border-gray-200 p-4 cursor-pointer hover:shadow-sm transition">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="font-semibold text-slate-900">${p.name}</p>
+          <p class="text-sm text-slate-500">${formatPrice(p.price)}</p>
+          <p class="text-xs text-slate-500">Categoria: <strong>${p.category || '-'}</strong></p>
+          <p class="mt-1 text-xs uppercase tracking-wide ${p.is_active ? 'text-emerald-600' : 'text-slate-400'}">${p.is_active ? 'Ativo' : 'Inativo'}</p>
+          
+        </div>
+          <div class="text-right">
+          <p class="text-xs text-slate-400">${formatDate(p.created_at)}</p>
+            <div class="mt-3 flex flex-col gap-2">
+              <button data-product-action="edit" data-product-id="${p.id}" class="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"> <i class="fa-solid fa-pen-to-square"></i> Editar</button>
+              <button data-product-action="delete" data-product-id="${p.id}" class="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-slate-100"> <i class="fa-solid fa-trash"></i> Excluir</button>
+            </div>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
+function resetProductForm() {
+  document.getElementById('product-id').value = '';
+  document.getElementById('product-name').value = '';
+  document.getElementById('product-description').value = '';
+  document.getElementById('product-price').value = '';
+  const categoryEl = document.getElementById('product-category');
+  if (categoryEl) categoryEl.value = 'acessorio';
+  document.getElementById('product-active').checked = true;
+  const status = document.getElementById('product-status');
+  if (status) status.classList.add('hidden');
+  // clear image input and hide preview modal
+  const imageEl = document.getElementById('product-image');
+  if (imageEl) {
+    imageEl.value = '';
+  }
+  hideProductImagePreview();
+  // reset sizes
+  ['pp','p','m','g','gg','xg'].forEach((s) => {
+    const chk = document.getElementById(`size-${s}`);
+    const qty = document.getElementById(`qty-${s}`);
+    if (chk) chk.checked = false;
+    if (qty) qty.value = '0';
+  });
+  // reset stock quantity
+  const stockEl = document.getElementById('product-stock-quantity');
+  if (stockEl) stockEl.value = '0';
+
+  // update category-dependent UI
+  try { updateProductCategoryDisplay(); } catch (e) { /* ignore */ }
+}
+
+function clearProductFieldErrors() {
+  const ids = ['product-name', 'product-description', 'product-price', 'product-category'];
+  ids.forEach((id) => {
+    const el = document.getElementById(`${id}-error`);
+    if (el) {
+      el.textContent = '';
+      el.classList.add('hidden');
+    }
+  });
+}
+
+function setProductFieldError(fieldId, message) {
+  const el = document.getElementById(`${fieldId}-error`);
+  if (el) {
+    el.textContent = message;
+    el.classList.remove('hidden');
+  }
+}
+
+function validateProductFormFields() {
+  clearProductFieldErrors();
+  const name = document.getElementById('product-name').value.trim();
+  const priceVal = document.getElementById('product-price').value;
+  // coupon fields removed from the form
+  const category = document.getElementById('product-category') ? document.getElementById('product-category').value : null;
+
+  let valid = true;
+
+  if (!name) {
+    setProductFieldError('product-name', 'Nome é obrigatório.');
+    valid = false;
+  } else if (name.length > 255) {
+    setProductFieldError('product-name', 'Nome deve ter no máximo 255 caracteres.');
+    valid = false;
+  }
+
+  const price = Number(priceVal);
+  if (priceVal === '' || Number.isNaN(price)) {
+    setProductFieldError('product-price', 'Preço válido é obrigatório.');
+    valid = false;
+  } else if (price < 0) {
+    setProductFieldError('product-price', 'Preço não pode ser negativo.');
+    valid = false;
+  }
+
+  // coupon validation removed
+
+  if (!category || (category !== 'vetuario' && category !== 'acessorio')) {
+    setProductFieldError('product-category', 'Selecione uma categoria válida.');
+    valid = false;
+  }
+
+  // image client-side checks (optional)
+  const imageEl = document.getElementById('product-image');
+  if (imageEl && imageEl.files && imageEl.files.length > 0) {
+    const file = imageEl.files[0];
+    const maxBytes = 5 * 1024 * 1024; // 5MB
+    if (!file.type.startsWith('image/')) {
+      setProductFieldError('product-image', 'O arquivo precisa ser uma imagem.');
+      valid = false;
+    } else if (file.size > maxBytes) {
+      setProductFieldError('product-image', 'A imagem é muito grande (máx 5MB).');
+      valid = false;
+    }
+  }
+
+  // sizes validation: if a size is checked, its quantity must be integer >= 0
+  const sizes = ['pp','p','m','g','gg','xg'];
+  let anySizeChecked = false;
+  for (const s of sizes) {
+    const chk = document.getElementById(`size-${s}`);
+    const qtyEl = document.getElementById(`qty-${s}`);
+    if (chk && chk.checked) {
+      anySizeChecked = true;
+      const q = Number(qtyEl ? qtyEl.value : 0);
+      if (Number.isNaN(q) || q < 0 || !Number.isInteger(q)) {
+        setProductFieldError('product-sizes', 'Quantidades devem ser inteiros >= 0 para tamanhos selecionados.');
+        valid = false;
+        break;
+      }
+    }
+  }
+
+  // If category is accessory, validate single stock quantity instead
+  // (category variable defined earlier in this function)
+  if (category === 'acessorio') {
+    const stockEl = document.getElementById('product-stock-quantity');
+    const stockVal = stockEl ? stockEl.value : '';
+    const q = Number(stockVal);
+    if (stockVal === '' || Number.isNaN(q) || q < 0 || !Number.isInteger(q)) {
+      const err = document.getElementById('product-stock-error');
+      if (err) { err.textContent = 'Quantidade deve ser inteiro >= 0.'; err.classList.remove('hidden'); }
+      valid = false;
+    } else {
+      const err = document.getElementById('product-stock-error');
+      if (err) { err.textContent = ''; err.classList.add('hidden'); }
+    }
+  } else {
+    // clear any stock error when not accessory
+    const err = document.getElementById('product-stock-error');
+    if (err) { err.textContent = ''; err.classList.add('hidden'); }
+  }
+
+  return valid;
+}
+
+// Toggle visibility between sizes (for vestuario) and single stock field (for acessorio)
+function updateProductCategoryDisplay() {
+  const categoryEl = document.getElementById('product-category');
+  const category = categoryEl ? categoryEl.value : null;
+  const sizesSection = document.getElementById('product-sizes-section');
+  const stockSection = document.getElementById('product-stock-section');
+  // default: show sizes, hide stock
+  if (category === 'acessorio') {
+    if (sizesSection) sizesSection.classList.add('hidden');
+    if (stockSection) stockSection.classList.remove('hidden');
+  } else {
+    if (sizesSection) sizesSection.classList.remove('hidden');
+    if (stockSection) stockSection.classList.add('hidden');
+  }
+}
+
+// wire category select to toggle UI on change (and call once at load)
+const productCategoryEl = document.getElementById('product-category');
+if (productCategoryEl) {
+  productCategoryEl.addEventListener('change', () => {
+    // clear any size/stock errors when switching
+    const sizesErr = document.getElementById('product-sizes-error'); if (sizesErr) { sizesErr.textContent = ''; sizesErr.classList.add('hidden'); }
+    const stockErr = document.getElementById('product-stock-error'); if (stockErr) { stockErr.textContent = ''; stockErr.classList.add('hidden'); }
+    updateProductCategoryDisplay();
+  });
+  // initial run
+  try { updateProductCategoryDisplay(); } catch (e) { /* ignore */ }
+}
+
+// Image preview handling
+let _productImagePreviewURL = null;
+function showProductImagePreview(file) {
+  const panel = document.getElementById('product-image-preview-panel');
+  const img = document.getElementById('product-image-preview');
+  const placeholder = document.getElementById('product-image-preview-placeholder');
+  if (!panel || !img || !file) return;
+
+  // revoke previous URL
+  if (_productImagePreviewURL) {
+    try { URL.revokeObjectURL(_productImagePreviewURL); } catch (e) {}
+    _productImagePreviewURL = null;
+  }
+
+  const url = URL.createObjectURL(file);
+  _productImagePreviewURL = url;
+  img.src = url;
+  img.classList.remove('hidden');
+  if (placeholder) placeholder.classList.add('hidden');
+}
+
+function hideProductImagePreview() {
+  const panel = document.getElementById('product-image-preview-panel');
+  const img = document.getElementById('product-image-preview');
+  const placeholder = document.getElementById('product-image-preview-placeholder');
+  if (!panel) return;
+  if (img) img.src = '';
+  if (img) img.classList.add('hidden');
+  if (placeholder) placeholder.classList.remove('hidden');
+  if (_productImagePreviewURL) {
+    try { URL.revokeObjectURL(_productImagePreviewURL); } catch (e) {}
+    _productImagePreviewURL = null;
+  }
+}
+
+function showProductImagePreviewUrl(url) {
+  const panel = document.getElementById('product-image-preview-panel');
+  const img = document.getElementById('product-image-preview');
+  const placeholder = document.getElementById('product-image-preview-placeholder');
+  if (!panel || !img || !url) return;
+
+  // revoke previous object URL if any
+  if (_productImagePreviewURL) {
+    try { URL.revokeObjectURL(_productImagePreviewURL); } catch (e) {}
+    _productImagePreviewURL = null;
+  }
+
+  img.src = url;
+  img.classList.remove('hidden');
+  if (placeholder) placeholder.classList.add('hidden');
+}
+
+// wire input change to preview
+const productImageInput = document.getElementById('product-image');
+if (productImageInput) {
+  productImageInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) {
+      showProductImagePreview(f);
+    } else {
+      hideProductImagePreview();
+    }
+  });
+}
+
+// close button
+const previewCloseBtn = document.getElementById('product-image-preview-close');
+if (previewCloseBtn) previewCloseBtn.addEventListener('click', (e) => { e.preventDefault(); hideProductImagePreview(); const el = document.getElementById('product-image'); if (el) el.value = ''; });
+
+// limpar erro do campo ao digitar
+['product-name','product-description','product-price','product-category','product-image'].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('input', () => {
+      const err = document.getElementById(`${id}-error`);
+      if (err) { err.textContent = ''; err.classList.add('hidden'); }
+    });
+    el.addEventListener('change', () => {
+      const err = document.getElementById(`${id}-error`);
+      if (err) { err.textContent = ''; err.classList.add('hidden'); }
+    });
+  }
+});
+
+function fillProductForm(product) {
+  document.getElementById('product-id').value = product.id || '';
+  document.getElementById('product-name').value = product.name || '';
+  document.getElementById('product-description').value = product.description || '';
+  document.getElementById('product-price').value = product.price || '';
+  // coupon fields removed from form
+  const categoryEl = document.getElementById('product-category');
+  if (categoryEl) categoryEl.value = product.category || 'acessorio';
+  document.getElementById('product-active').checked = Boolean(product.is_active);
+  // clear file input so we don't accidentally submit previous selection
+  const imageEl = document.getElementById('product-image');
+  if (imageEl) imageEl.value = '';
+
+  // if product already has an image_url, show preview from that URL
+  if (product.image_url) {
+    showProductImagePreviewUrl(resolveMediaUrlAdmin(product.image_url));
+  } else {
+    hideProductImagePreview();
+  }
+
+  // fill stock for accessories (if present)
+  const stockEl = document.getElementById('product-stock-quantity');
+  if (stockEl) stockEl.value = (product.stock_quantity !== undefined && product.stock_quantity !== null) ? String(product.stock_quantity) : '0';
+
+  // ensure UI reflects chosen category (show/hide sizes vs stock)
+  try { updateProductCategoryDisplay(); } catch (e) { /* ignore */ }
+
+  // fill sizes if available
+  try {
+    const sizes = product.sizes || {};
+    ['pp','p','m','g','gg','xg'].forEach((s) => {
+      const chk = document.getElementById(`size-${s}`);
+      const qty = document.getElementById(`qty-${s}`);
+      if (chk) chk.checked = Boolean(sizes[s]);
+      if (qty) qty.value = (sizes[s] !== undefined && sizes[s] !== null) ? String(sizes[s]) : '0';
+    });
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Event delegation for product actions
+document.addEventListener('click', async (ev) => {
+  // Clique no card (qualquer lugar do artigo) abre o formulário de edição,
+  // exceto quando o clique for em botões com data-product-action (Editar/Excluir).
+  const createBtn = ev.target.closest && (ev.target.closest('#product-create-button') || ev.target.closest('#product-create-button-dashboard'));
+  if (createBtn) {
+    // botão para abrir o formulário em branco
+    resetProductForm();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  const cardEl = ev.target.closest && ev.target.closest('[data-product-card-id]');
+  const actionEl = ev.target.closest && ev.target.closest('[data-product-action]');
+
+  if (cardEl && !actionEl) {
+    const id = cardEl.getAttribute('data-product-card-id');
+    const prod = products.find((p) => String(p.id) === String(id));
+    if (prod) fillProductForm(prod);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  const editBtn = actionEl && actionEl.getAttribute('data-product-action') === 'edit' ? actionEl : null;
+  const delBtn = actionEl && actionEl.getAttribute('data-product-action') === 'delete' ? actionEl : null;
+
+  if (editBtn) {
+    const id = editBtn.getAttribute('data-product-id');
+    const prod = products.find((p) => String(p.id) === String(id));
+    if (prod) fillProductForm(prod);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (delBtn) {
+    const id = delBtn.getAttribute('data-product-id');
+    if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+    try {
+      await adminFetch(`/admin/products/${id}`, { method: 'DELETE' });
+      await reloadProducts();
+      setStatus('product-status', 'Produto removido com sucesso.', 'success');
+    } catch (err) {
+      setStatus('product-status', err.message || 'Erro ao remover produto.', 'error');
+    }
+  }
+});
+
+// Form submit handler
+const productForm = document.getElementById('product-form');
+if (productForm) {
+  productForm.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    // Validação client-side por campo
+    const isValid = validateProductFormFields();
+    if (!isValid) {
+      setStatus('product-status', 'Corrija os erros do formulário antes de enviar.', 'error');
+      return;
+    }
+    const id = document.getElementById('product-id').value;
+      const payload = {
+      name: document.getElementById('product-name').value.trim(),
+      description: document.getElementById('product-description').value.trim(),
+      price: Number(document.getElementById('product-price').value),
+      category: document.getElementById('product-category') ? document.getElementById('product-category').value : null,
+      is_active: document.getElementById('product-active').checked,
+    };
+
+    try {
+      const imageEl = document.getElementById('product-image');
+      const hasImage = imageEl && imageEl.files && imageEl.files.length > 0;
+
+      if (hasImage) {
+        const formData = new FormData();
+        // append all fields
+        Object.keys(payload).forEach((k) => {
+          const v = payload[k];
+          if (v !== null && v !== undefined) formData.append(k, v);
+        });
+        formData.append('image', imageEl.files[0]);
+
+        // append sizes as JSON string if any
+        const sizesObj = {};
+        ['pp','p','m','g','gg','xg'].forEach((s) => {
+          const chk = document.getElementById(`size-${s}`);
+          const qty = document.getElementById(`qty-${s}`);
+          if (chk && chk.checked) {
+            sizesObj[s] = Number(qty ? qty.value : 0) || 0;
+          }
+        });
+        if (Object.keys(sizesObj).length > 0) {
+          formData.append('sizes', JSON.stringify(sizesObj));
+        }
+
+        // append stock quantity (for accessories)
+        const stockVal = document.getElementById('product-stock-quantity') ? document.getElementById('product-stock-quantity').value : null;
+        if (stockVal !== null && stockVal !== undefined) {
+          formData.append('stock_quantity', String(Number(stockVal) || 0));
+        }
+
+        if (id) {
+          // Laravel expects method spoofing for multipart PUT
+          formData.append('_method', 'PUT');
+          await adminFetch(`/admin/products/${id}`, { method: 'POST', body: formData });
+          setStatus('product-status', 'Produto atualizado.', 'success');
+        } else {
+          await adminFetch('/admin/products', { method: 'POST', body: formData });
+          setStatus('product-status', 'Produto criado com sucesso.', 'success');
+        }
+      } else {
+        // include sizes in JSON payload when not using FormData
+        const sizesObj = {};
+        ['pp','p','m','g','gg','xg'].forEach((s) => {
+          const chk = document.getElementById(`size-${s}`);
+          const qty = document.getElementById(`qty-${s}`);
+          if (chk && chk.checked) {
+            sizesObj[s] = Number(qty ? qty.value : 0) || 0;
+          }
+        });
+  if (Object.keys(sizesObj).length > 0) payload.sizes = sizesObj;
+  // include stock quantity in JSON payload
+  const stockValJson = document.getElementById('product-stock-quantity') ? document.getElementById('product-stock-quantity').value : null;
+  if (stockValJson !== null && stockValJson !== undefined) payload.stock_quantity = Number(stockValJson) || 0;
+        if (id) {
+          await adminFetch(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+          setStatus('product-status', 'Produto atualizado.', 'success');
+        } else {
+          await adminFetch('/admin/products', { method: 'POST', body: JSON.stringify(payload) });
+          setStatus('product-status', 'Produto criado com sucesso.', 'success');
+        }
+      }
+
+      resetProductForm();
+      await reloadProducts();
+    } catch (err) {
+      setStatus('product-status', err.message || 'Erro ao salvar produto.', 'error');
+    }
+  });
+
+  const cancelBtn = document.getElementById('product-cancel-edit');
+  if (cancelBtn) cancelBtn.addEventListener('click', (e) => { e.preventDefault(); resetProductForm(); });
 }
 
 function renderEditalManagerList() {
@@ -639,13 +1176,32 @@ async function adminFetch(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  // Se houver body e não foi definido Content-Type, presumimos JSON quando for string
+  if (options.body && typeof options.body === 'string') {
+    const hasContentType = Object.keys(headers).some((k) => k.toLowerCase() === 'content-type');
+    if (!hasContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+  }
+
   const response = await fetch(`${ADMIN_API_BASE}${endpoint}`, {
     ...options,
     headers,
   });
 
-  const isJson = response.headers.get('content-type')?.includes('application/json');
-  const payload = isJson ? await response.json() : null;
+  // tenta parsear JSON somente se for apropriado
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.toLowerCase().includes('application/json');
+  let payload = null;
+
+  if (isJson) {
+    try {
+      payload = await response.json();
+    } catch (err) {
+      console.error('Falha ao parsear JSON da resposta:', err);
+      payload = null;
+    }
+  }
 
   if (!response.ok) {
     if (response.status === 401 && adminPage === 'admin-dashboard') {
@@ -654,7 +1210,9 @@ async function adminFetch(endpoint, options = {}) {
       throw new Error('Sua sessão expirou. Faça login novamente.');
     }
 
-    throw new Error(payload?.message || `Erro ${response.status}`);
+    // prioriza mensagem do payload se existir
+    const message = payload?.message || `Erro ${response.status}`;
+    throw new Error(message);
   }
 
   return payload;
@@ -670,6 +1228,14 @@ async function requireAuth() {
 
   try {
     const payload = await adminFetch('/auth/me');
+
+    if (!payload || typeof payload !== 'object' || !payload.user) {
+      // resposta inesperada: força logout local
+      clearSession();
+      window.location.href = 'login.html';
+      return null;
+    }
+
     return payload.user;
   } catch (error) {
     clearSession();
@@ -711,8 +1277,15 @@ async function initLoginPage() {
           password: document.getElementById('senha').value,
         }),
       });
+        if (!payload || typeof payload !== 'object') {
+          throw new Error('Resposta inválida do servidor. Tente novamente.');
+        }
 
-      setSession(payload.token, payload.user);
+        if (!payload.token) {
+          throw new Error(payload?.message || 'Token não recebido do servidor.');
+        }
+
+        setSession(payload.token, payload.user);
       window.location.href = 'dashboard.html';
     } catch (error) {
       setStatus('login-status', error.message, 'error');
@@ -763,7 +1336,18 @@ async function initDashboardPage() {
   let managementName = 'Gestão Pioneira 2026';
 
   document.querySelectorAll('[data-section-target]').forEach((item) => {
-    item.addEventListener('click', () => setActiveAdminSection(item.dataset.sectionTarget));
+    item.addEventListener('click', async () => {
+      const target = item.dataset.sectionTarget;
+      setActiveAdminSection(target);
+      // Quando abrir a seção Loja, garanta que os produtos sejam recarregados
+      if (target === 'loja') {
+        try {
+          await reloadProducts();
+        } catch (err) {
+          setStatus('dashboard-status', 'Erro ao carregar produtos: ' + (err.message || err), 'error');
+        }
+      }
+    });
   });
 
   setActiveAdminSection('dashboard');

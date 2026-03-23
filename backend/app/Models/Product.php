@@ -17,7 +17,12 @@ class Product extends Model
         'description',
         'price',
         'image_url',
+        'category',
+        'coupon_code',
+        'coupon_discount',
         'is_active',
+        'sizes',
+        'stock_quantity',
     ];
 
     /**
@@ -26,6 +31,9 @@ class Product extends Model
     protected $casts = [
         'price'     => 'decimal:2',
         'is_active' => 'boolean',
+        'coupon_discount' => 'decimal:2',
+        'sizes' => 'array',
+        'stock_quantity' => 'integer',
     ];
 
     /**
