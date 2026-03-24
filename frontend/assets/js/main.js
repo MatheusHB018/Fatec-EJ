@@ -81,11 +81,43 @@ function inferProductCategory(productName) {
     return 'Acessórios';
   }
 
-  if (name.includes('planner')) {
-    return 'Papelaria';
-  }
 
   return 'Produtos';
+}
+
+// Normalize category labels for comparison (remove accents, lowercase, trim)
+function normalizeCategoryLabel(label) {
+  if (!label) return '';
+  return String(label)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]/g, '')
+    .replace('categoria', '')
+  // normalize plural vs singular (remove trailing 's') and trim
+  .trim();
+}
+
+// Return pretty category name for display using product.category when available
+function prettyCategoryFromProduct(product) {
+  if (!product) return 'Produtos';
+  if (product.category) {
+    const cat = String(product.category).toLowerCase();
+    if (cat === 'vetuario' || cat === 'vestuario' || cat === 'vestuário') return 'Vestuário';
+    if (cat === 'acessorio' || cat === 'acessório') return 'Acessórios';
+    return String(product.category);
+  }
+  return inferProductCategory(product.name);
+}
+
+function canonicalCategory(norm) {
+  if (!norm) return '';
+  const n = String(norm).toLowerCase();
+  if (n === 'vetuario') return 'vestuario'; // tolerate typo in DB
+  if (n === 'vestuario') return 'vestuario';
+  if (n === 'acessorio' || n === 'acessorios') return 'acessorio';
+  if (n === 'todos' || n === 'todo') return 'todos';
+  return n;
 }
 
 function renderMenu(menuItems) {
@@ -436,7 +468,7 @@ function renderProducts(products) {
 
   status.classList.add('hidden');
   grid.innerHTML = products.map((product) => {
-    const category = inferProductCategory(product.name);
+  const category = prettyCategoryFromProduct(product);
 
     return `
       <article class="group rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -473,29 +505,237 @@ function fillProductModal(product) {
   const modalDescription = document.getElementById('modal-product-description');
   const modalAvailability = document.getElementById('modal-availability');
 
+  const modalSizeSelect = document.getElementById('tamanho');
+
   if (!product) {
     return;
   }
 
   selectedProduct = product;
   modalName.textContent = product.name;
-  modalCategory.textContent = `Categoria: ${inferProductCategory(product.name)}`;
-  modalPrice.textContent = formatPrice(product.price);
+  modalCategory.textContent = `Categoria: ${prettyCategoryFromProduct(product)}`;
+  // Show price with coupon discount if present
+  const coupon = product.coupon_discount ? Number(product.coupon_discount) : 0;
+  if (coupon && !isNaN(coupon) && coupon > 0) {
+    const original = formatPrice(product.price);
+    const discounted = formatPrice(Number(product.price) - coupon);
+    modalPrice.innerHTML = `<span class="line-through text-base text-slate-500 mr-3">${original}</span><span class="text-3xl font-extrabold text-pink-700">${discounted}</span>`;
+  } else {
+    modalPrice.textContent = formatPrice(product.price);
+  }
   modalDescription.textContent = product.description || 'Produto exclusivo da EJ FATEC.';
   modalAvailability.textContent = product.is_active ? 'Disponível' : 'Indisponível';
-}
 
-function openProductModal(productId) {
-  const productModal = document.getElementById('produto-modal');
-  const product = allProducts.find((item) => String(item.id) === String(productId));
+  // Populate size select based on product.sizes if available.
+  // Expected shape: product.sizes = { PP: 1, P: 2, M: 0, G: 3, GG: 0, XG: 0 }
+  // Support a few possible shapes (object, JSON string, or array).
+  try {
+    const sizesOrder = ['PP', 'P', 'M', 'G', 'GG', 'XG'];
+    let sizesObj = {};
 
-  if (!productModal || !product) {
-    return;
+    if (!modalSizeSelect) {
+      // nothing to do
+    } else {
+      // Build sizesObj from new backend shape (sizes map) or available_sizes + stock_xx
+      if (product.sizes && typeof product.sizes === 'object' && !Array.isArray(product.sizes)) {
+        sizesObj = product.sizes;
+      } else if (Array.isArray(product.available_sizes) && product.available_sizes.length > 0) {
+        product.available_sizes.forEach((s) => {
+          const key = String(s).toUpperCase();
+          const qtyField = `stock_${key.toLowerCase()}`;
+          const qty = product.hasOwnProperty(qtyField) ? Number(product[qtyField] || 0) : 0;
+          sizesObj[key] = qty;
+        });
+        sizesOrder.forEach((s) => { if (!sizesObj.hasOwnProperty(s)) sizesObj[s] = 0; });
+      } else if (product.sizes) {
+        // legacy handling: string/array/object
+        if (typeof product.sizes === 'string') {
+          try { sizesObj = JSON.parse(product.sizes); } catch (e) { sizesObj = {}; }
+        } else if (Array.isArray(product.sizes)) {
+          product.sizes.forEach((entry) => {
+            if (typeof entry === 'string') sizesObj[entry] = sizesObj[entry] ? sizesObj[entry] + 1 : 1;
+            else if (entry && typeof entry === 'object') {
+              if (entry.size) sizesObj[entry.size] = Number(entry.qty || 1);
+              else Object.keys(entry).forEach((k) => sizesObj[k] = Number(entry[k] || 0));
+            }
+          });
+        } else if (typeof product.sizes === 'object') {
+          sizesObj = product.sizes || {};
+        }
+      } else {
+        // fallback: no sizes info -> zero quantities
+        sizesOrder.forEach((s) => { sizesObj[s] = 0; });
+      }
+
+      // clear existing options and build UI
+      modalSizeSelect.innerHTML = '';
+      const modalSizeButtons = document.getElementById('modal-size-buttons');
+      if (modalSizeButtons) modalSizeButtons.innerHTML = '';
+  const modalSizesQuantities = document.getElementById('modal-sizes-quantities');
+  if (modalSizesQuantities) modalSizesQuantities.innerHTML = '';
+
+      let firstAvailable = null;
+      sizesOrder.forEach((s) => {
+        const qty = Number(sizesObj[s] || 0);
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = qty > 0 ? `${s} (${qty} disponíveis)` : `${s} (indisponível)`;
+        if (qty <= 0) opt.disabled = true;
+        else if (firstAvailable === null) firstAvailable = s;
+        modalSizeSelect.appendChild(opt);
+
+        if (modalSizeButtons) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium bg-white text-slate-700';
+          btn.dataset.size = s;
+          btn.textContent = s;
+          if (qty <= 0) { btn.disabled = true; btn.classList.add('opacity-40', 'cursor-not-allowed'); }
+          btn.addEventListener('click', () => {
+            if (btn.disabled) return;
+            modalSizeSelect.value = s;
+            Array.from(modalSizeButtons.querySelectorAll('button')).forEach((b) => b.classList.remove('ring-2', 'ring-pink-700', 'bg-pink-700', 'text-white'));
+            btn.classList.add('ring-2', 'ring-pink-700', 'bg-pink-700', 'text-white');
+          });
+          modalSizeButtons.appendChild(btn);
+        }
+
+        // also render a small quantity tile for desktop / summary
+        if (modalSizesQuantities) {
+          const tile = document.createElement('div');
+          tile.className = 'flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2';
+          const lbl = document.createElement('div');
+          lbl.className = 'font-medium text-sm text-slate-700';
+          lbl.textContent = s;
+          const q = document.createElement('div');
+          q.className = `text-sm font-semibold ${qty > 0 ? 'text-emerald-700' : 'text-rose-600'}`;
+          q.textContent = qty > 0 ? `${qty} em estoque` : 'indisponível';
+          tile.appendChild(lbl);
+          tile.appendChild(q);
+          modalSizesQuantities.appendChild(tile);
+        }
+      });
+
+      if (firstAvailable) {
+        modalSizeSelect.value = firstAvailable;
+        const modalSizeButtonsEl = document.getElementById('modal-size-buttons');
+        if (modalSizeButtonsEl) {
+          Array.from(modalSizeButtonsEl.querySelectorAll('button')).forEach((b) => { if (b.dataset.size === firstAvailable) b.classList.add('ring-2', 'ring-pink-700', 'bg-pink-700', 'text-white'); });
+        }
+      }
+
+      modalSizeSelect.addEventListener('change', () => {
+        const val = modalSizeSelect.value;
+        const btns = document.getElementById('modal-size-buttons');
+        if (btns) {
+          Array.from(btns.querySelectorAll('button')).forEach((b) => {
+            b.classList.toggle('ring-2', b.dataset.size === val);
+            b.classList.toggle('ring-pink-700', b.dataset.size === val);
+            b.classList.toggle('bg-pink-700', b.dataset.size === val);
+            b.classList.toggle('text-white', b.dataset.size === val);
+          });
+        }
+      });
+      // enable/disable add-to-cart based on selected size qty or accessory stock
+      const addToCartBtn = document.getElementById('add-to-cart-btn');
+      const updateAddToCartState = () => {
+        if (!addToCartBtn) return;
+        if (product.category && product.category.toLowerCase() === 'acessorio') {
+          const sq = Number(product.stock_quantity || 0);
+          addToCartBtn.disabled = sq <= 0;
+          addToCartBtn.classList.toggle('opacity-50', sq <= 0);
+        } else {
+          const sel = modalSizeSelect ? modalSizeSelect.value : null;
+          const qty = sel ? Number(sizesObj[sel] || 0) : 0;
+          addToCartBtn.disabled = qty <= 0;
+          addToCartBtn.classList.toggle('opacity-50', qty <= 0);
+        }
+      };
+
+      // initial state
+      updateAddToCartState();
+      // update when size selection changes
+      if (modalSizeSelect) modalSizeSelect.addEventListener('change', updateAddToCartState);
+    }
+  } catch (err) {
+    console.debug('fillProductModal size population error', err);
   }
 
-  fillProductModal(product);
-  productModal.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+  // Populate images (main + thumbnails) if product.images exists or fallback to image_url
+  try {
+    const mainImgEl = document.getElementById('modal-main-image');
+    const mainPlaceholder = document.getElementById('modal-main-image-placeholder');
+    const thumbs = document.getElementById('modal-thumbs');
+
+    // determine images array: prefer `images`, fallback to `image_url` or `product.image_url`
+    let imgs = [];
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) imgs = product.images;
+    else if (product.image_url) imgs = [product.image_url];
+    else if (product.image) imgs = [product.image];
+
+    // clear thumbnails
+    if (thumbs) thumbs.innerHTML = '';
+
+    if (imgs.length > 0) {
+      const resolvedMain = resolveMediaUrl(imgs[0]);
+      if (mainImgEl) {
+        mainImgEl.src = resolvedMain;
+        mainImgEl.classList.remove('hidden');
+      }
+      if (mainPlaceholder) mainPlaceholder.classList.add('hidden');
+
+      imgs.forEach((img, idx) => {
+        const url = resolveMediaUrl(img);
+        if (!thumbs) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'rounded-xl overflow-hidden border border-slate-200 h-20';
+        btn.title = `Imagem ${idx + 1}`;
+        const imgel = document.createElement('img');
+        imgel.src = url;
+        imgel.alt = `${product.name} ${idx + 1}`;
+        imgel.className = 'w-full h-full object-cover';
+        btn.appendChild(imgel);
+        btn.addEventListener('click', () => {
+          if (mainImgEl) mainImgEl.src = url;
+        });
+        thumbs.appendChild(btn);
+      });
+    } else {
+      // no images
+      if (mainImgEl) {
+        mainImgEl.src = '';
+        mainImgEl.classList.add('hidden');
+      }
+      if (mainPlaceholder) mainPlaceholder.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.debug('fillProductModal image population error', err);
+  }
+}
+
+async function openProductModal(productId) {
+  const productModal = document.getElementById('produto-modal');
+
+  if (!productModal || !productId) return;
+
+  // fetch product details from backend (uses publicShow route)
+  try {
+    const detail = await fetchJson(`/products/${productId}`);
+    // fill modal with fresh detail
+    fillProductModal(detail);
+    productModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  } catch (err) {
+    console.error('failed to load product detail', err);
+    // fallback: try to find in allProducts and show that minimal info
+    const fallback = allProducts.find((item) => String(item.id) === String(productId));
+    if (fallback) {
+      fillProductModal(fallback);
+      productModal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+  }
 }
 
 function closeProductModal() {
@@ -510,24 +750,44 @@ function closeProductModal() {
 }
 
 function applyProductFilters() {
-  const search = document.getElementById('product-search').value.trim().toLowerCase();
-  const category = document.getElementById('product-category').value.replace('Categoria: ', '');
-  const sort = document.getElementById('product-sort').value;
+  const search = (document.getElementById('product-search').value || '').trim().toLowerCase();
+  // remove common prefixes like "Categoria: " (case-insensitive) to get the real label
+  const rawCategory = (document.getElementById('product-category').value || '').replace(/^(categoria:\s*)/i, '');
+  const selectedNorm = canonicalCategory(normalizeCategoryLabel(rawCategory));
+  // remove prefix like "Ordenar por: " to normalize the sort value
+  const rawSort = (document.getElementById('product-sort').value || '').replace(/^(ordenar por:\s*)/i, '');
+  const sort = rawSort.trim();
 
-  let filtered = [...allProducts].filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(search) || (product.description || '').toLowerCase().includes(search);
-    const inferredCategory = inferProductCategory(product.name);
-    const matchesCategory = category === 'Todos' || category === inferredCategory;
+  // Debugging: log selected category and encountered product categories to help diagnose mismatches
+  try {
+    console.debug('[products] applyProductFilters start', { search, rawCategory, selectedNorm, sort, totalProducts: (allProducts || []).length });
+    const encountered = Array.from(new Set((allProducts || []).map((p) => canonicalCategory(normalizeCategoryLabel(p && p.category ? String(p.category) : inferProductCategory(p && p.name ? p.name : ''))))));
+    console.debug('[products] encountered canonical categories', encountered.slice(0, 20));
+    if (Array.isArray(allProducts) && allProducts.length > 0) console.debug('[products] sample product', allProducts[0]);
+  } catch (err) {
+    console.debug('[products] debug error', err);
+  }
+
+  const filtered = [...allProducts].filter((product) => {
+    const name = String(product.name || '');
+    const desc = String(product.description || '');
+    const matchesSearch = name.toLowerCase().includes(search) || desc.toLowerCase().includes(search);
+
+    // prefer explicit product.category from backend, fallback to name inference
+    const prodCatSource = product && product.category ? String(product.category) : inferProductCategory(name);
+    const prodCatNorm = canonicalCategory(normalizeCategoryLabel(prodCatSource));
+    const matchesCategory = selectedNorm === 'todos' || prodCatNorm === selectedNorm;
 
     return matchesSearch && matchesCategory;
   });
 
-  if (sort === 'Menor Preço') {
-    filtered.sort((left, right) => Number(left.price) - Number(right.price));
-  } else if (sort === 'Maior Preço') {
-    filtered.sort((left, right) => Number(right.price) - Number(left.price));
+  if (/^menor/i.test(sort)) {
+    filtered.sort((left, right) => Number(left.price || 0) - Number(right.price || 0));
+  } else if (/^maior/i.test(sort)) {
+    filtered.sort((left, right) => Number(right.price || 0) - Number(left.price || 0));
   } else {
-    filtered.sort((left, right) => Number(right.id) - Number(left.id));
+    // default: Novidades -> newest first by id
+    filtered.sort((left, right) => Number(right.id || 0) - Number(left.id || 0));
   }
 
   renderProducts(filtered);
@@ -585,12 +845,22 @@ async function bootstrapHome() {
 }
 
 async function bootstrapProducts() {
-  const [content, products] = await Promise.all([
+  const [content, productsPayload] = await Promise.all([
     fetchJson('/content'),
     fetchJson('/products'),
   ]);
 
-  allProducts = Array.isArray(products) ? products : [];
+  // API may return an array or an object with a `data` property (Resource/Envelope).
+  if (Array.isArray(productsPayload)) {
+    allProducts = productsPayload;
+  } else if (productsPayload && Array.isArray(productsPayload.data)) {
+    allProducts = productsPayload.data;
+  } else {
+    // fallback: try to convert to an array if possible
+    allProducts = [];
+    console.warn('unexpected /products payload, expected array or { data: [...] }', productsPayload);
+  }
+
   initProductsPage(content);
   applyProductFilters();
 }

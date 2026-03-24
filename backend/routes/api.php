@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\Route;
 
 // Produtos ativos para a loja
 Route::get('/products', [ProductController::class, 'publicIndex']);
+// Detalhes públicos de um produto
+Route::get('/products/{product}', [ProductController::class, 'publicShow']);
 
 // Configurações públicas (nome da gestão, hero, sobre)
 Route::get('/settings', [SettingController::class, 'publicShow']);
