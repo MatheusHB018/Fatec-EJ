@@ -1335,7 +1335,7 @@ async function initDashboardPage() {
   const usersList = document.getElementById('users-list');
   let managementName = 'Gestão Pioneira 2026';
 
-  document.querySelectorAll('[data-section-target]').forEach((item) => {
+    document.querySelectorAll('[data-section-target]').forEach((item) => {
     item.addEventListener('click', async () => {
       const target = item.dataset.sectionTarget;
       setActiveAdminSection(target);
@@ -1345,6 +1345,14 @@ async function initDashboardPage() {
           await reloadProducts();
         } catch (err) {
           setStatus('dashboard-status', 'Erro ao carregar produtos: ' + (err.message || err), 'error');
+        }
+      }
+      // Quando abrir a seção Eventos, recarrega eventos
+      if (target === 'eventos') {
+        try {
+          await reloadEvents();
+        } catch (err) {
+          setStatus('dashboard-status', 'Erro ao carregar eventos: ' + (err.message || err), 'error');
         }
       }
     });
@@ -1999,6 +2007,279 @@ async function initDashboardPage() {
     window.location.href = 'login.html';
   });
 }
+
+/* -----------------------
+   Eventos (Cursos/Eventos)
+   ----------------------- */
+async function reloadEvents() {
+  try {
+    const payload = await adminFetch('/admin/events');
+    events = Array.isArray(payload) ? payload : (payload.data || payload || []);
+    renderEventsList();
+  } catch (err) {
+    console.error('Erro ao carregar eventos', err);
+    throw err;
+  }
+}
+
+function renderEventsList() {
+  const container = document.getElementById('events-list');
+  if (!container) return;
+
+  if (!events || events.length === 0) {
+    container.innerHTML = '<p class="text-sm text-slate-500">Nenhum evento cadastrado.</p>';
+    return;
+  }
+
+  container.innerHTML = events.map((ev) => {
+    // determine status visually in admin: upcoming, ongoing, finished
+    const now = new Date();
+    const start = ev.start_date ? new Date(ev.start_date) : null;
+    const end = ev.end_date ? new Date(ev.end_date) : null;
+    let badge = '';
+
+    if (start && now < start) {
+      // upcoming (agendado) - yellow
+      badge = '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">Agendado</span>';
+    } else if (start && end && now >= start && now <= end) {
+      // ongoing - green
+      badge = '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Ativo</span>';
+    } else if (end && now > end) {
+      // finished - red
+      badge = '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Encerrado</span>';
+    } else {
+      badge = ev.is_active ? '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Ativo</span>' : '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Inativo</span>';
+    }
+
+    return `
+    <article class="rounded-xl border border-gray-200 p-4 mb-3 bg-white">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">${badge}</div>
+          <h3 class="font-semibold text-slate-900 mt-3">${ev.title}</h3>
+          <p class="mt-1 text-sm text-slate-500">${ev.description || '-'}</p>
+          <p class="mt-2 text-xs uppercase tracking-wide text-slate-400">${formatDate(ev.start_date)} → ${formatDate(ev.end_date)}</p>
+          <p class="mt-1 text-xs uppercase tracking-wide ${ev.is_active ? 'text-emerald-600' : 'text-slate-400'}">${ev.is_active ? 'Ativo (flag)' : 'Inativo (flag)'}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm text-slate-500">${ev.location || '-'}</p>
+          <div class="mt-3 flex flex-col gap-2">
+            <button data-event-action="edit" data-event-id="${ev.id}" class="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"> <i class="fa-solid fa-pen-to-square"></i> Editar</button>
+            <button data-event-action="delete" data-event-id="${ev.id}" class="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-slate-100"> <i class="fa-solid fa-trash"></i> Excluir</button>
+          </div>
+        </div>
+      </div>
+    </article>
+    `;
+  }).join('');
+}
+
+function resetEventForm() {
+  document.getElementById('event-id').value = '';
+  document.getElementById('event-title').value = '';
+  document.getElementById('event-description').value = '';
+  document.getElementById('event-start').value = '';
+  document.getElementById('event-end').value = '';
+  document.getElementById('event-location').value = '';
+  document.getElementById('event-type').value = 'participante';
+  document.getElementById('event-price').value = '';
+  document.getElementById('event-pix').value = '';
+  document.getElementById('event-active').checked = true;
+  const status = document.getElementById('event-status'); if (status) { status.classList.add('hidden'); status.textContent = ''; }
+}
+
+function fillEventForm(ev) {
+  document.getElementById('event-id').value = ev.id || '';
+  document.getElementById('event-title').value = ev.title || '';
+  document.getElementById('event-description').value = ev.description || '';
+  // convert ISO datetime to input value format yyyy-MM-ddTHH:mm
+  try {
+    if (ev.start_date) document.getElementById('event-start').value = new Date(ev.start_date).toISOString().slice(0,16);
+    if (ev.end_date) document.getElementById('event-end').value = new Date(ev.end_date).toISOString().slice(0,16);
+  } catch (e) {}
+  document.getElementById('event-location').value = ev.location || '';
+  document.getElementById('event-type').value = ev.registration_type || 'participante';
+  document.getElementById('event-price').value = ev.price || '';
+  document.getElementById('event-pix').value = ev.pix_key || '';
+  document.getElementById('event-active').checked = Boolean(ev.is_active);
+}
+
+// Delegation for event actions
+document.addEventListener('click', async (ev) => {
+  const trigger = ev.target.closest && ev.target.closest('[data-event-action]');
+  if (!trigger) return;
+
+  const action = trigger.dataset.eventAction;
+  const eventId = trigger.dataset.eventId;
+  const theEvent = events.find((e) => String(e.id) === String(eventId));
+
+  if (!theEvent) return;
+
+  if (action === 'edit') {
+    fillEventForm(theEvent);
+    setActiveAdminSection('eventos');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  if (action === 'delete') {
+    const confirmed = window.confirm(`Deseja remover o evento "${theEvent.title}"?`);
+    if (!confirmed) return;
+    try {
+      await adminFetch(`/admin/events/${eventId}`, { method: 'DELETE' });
+      setStatus('event-status', 'Evento removido com sucesso.', 'success');
+      await reloadEvents();
+      resetEventForm();
+    } catch (err) {
+      setStatus('event-status', err.message || 'Erro ao remover evento.', 'error');
+    }
+  }
+});
+
+// Form submit handling
+const eventForm = document.getElementById('event-form');
+if (eventForm) {
+  eventForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('event-id').value;
+    const payload = {
+      title: document.getElementById('event-title').value.trim(),
+      description: document.getElementById('event-description').value.trim(),
+      start_date: document.getElementById('event-start').value,
+      end_date: document.getElementById('event-end').value,
+      location: document.getElementById('event-location').value.trim(),
+      registration_type: document.getElementById('event-type').value,
+      price: document.getElementById('event-price').value ? Number(document.getElementById('event-price').value.replace(',', '.')) : 0,
+      pix_key: document.getElementById('event-pix').value.trim(),
+      is_active: document.getElementById('event-active').checked,
+    };
+
+    try {
+      const method = id ? 'PUT' : 'POST';
+      const endpoint = id ? `/admin/events/${id}` : '/admin/events';
+      await adminFetch(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      setStatus('event-status', id ? 'Evento atualizado.' : 'Evento criado com sucesso.', 'success');
+      resetEventForm();
+      await reloadEvents();
+    } catch (err) {
+      setStatus('event-status', err.message || 'Erro ao salvar evento.', 'error');
+    }
+  });
+
+  const cancelBtn = document.getElementById('event-cancel-edit');
+  if (cancelBtn) cancelBtn.addEventListener('click', (ev) => { ev.preventDefault(); resetEventForm(); setStatus('event-status', 'Edição cancelada.', 'success'); });
+}
+
+/* -----------------------
+   Entry Modal (Inscrição)
+   ----------------------- */
+function openEntryModal() {
+  const modal = document.getElementById('entry-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeEntryModal() {
+  const modal = document.getElementById('entry-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const openBtn = document.getElementById('open-entry-modal-btn');
+  const closeBtn = document.getElementById('entry-modal-close');
+  const overlay = document.getElementById('entry-modal-overlay');
+  const cancelBtn = document.getElementById('entry-cancel');
+
+  if (openBtn) openBtn.addEventListener('click', (e) => { e.preventDefault(); openEntryModal(); });
+  const openFromEventBtn = document.getElementById('open-entry-modal-from-event-btn');
+  if (openFromEventBtn) openFromEventBtn.addEventListener('click', (e) => { e.preventDefault(); openEntryModal(); });
+  if (closeBtn) closeBtn.addEventListener('click', (e) => { e.preventDefault(); closeEntryModal(); });
+  if (overlay) overlay.addEventListener('click', () => closeEntryModal());
+  if (cancelBtn) cancelBtn.addEventListener('click', () => closeEntryModal());
+
+  // entry type buttons
+  document.querySelectorAll('.entry-type-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.entry-type-btn').forEach((b) => {
+        b.classList.remove('border-blue-300','bg-blue-50');
+      });
+      btn.classList.add('border-blue-300','bg-blue-50');
+      const t = btn.getAttribute('data-entry-type');
+      const hidden = document.getElementById('entry-type-input');
+      if (hidden) hidden.value = t;
+      // enable/disable price and pix inputs depending on type
+      const priceInput = document.getElementById('entry-price');
+      const pixInput = document.getElementById('entry-pix');
+      if (t === 'gratuita') {
+        if (priceInput) { priceInput.disabled = true; priceInput.classList.add('opacity-50'); }
+        if (pixInput) { pixInput.disabled = true; pixInput.classList.add('opacity-50'); }
+      } else if (t === 'paga') {
+        if (priceInput) { priceInput.disabled = false; priceInput.classList.remove('opacity-50'); }
+        if (pixInput) { pixInput.disabled = false; pixInput.classList.remove('opacity-50'); }
+      } else {
+        // doacao: pix optional but price hidden/disabled
+        if (priceInput) { priceInput.disabled = true; priceInput.classList.add('opacity-50'); }
+        if (pixInput) { pixInput.disabled = false; pixInput.classList.remove('opacity-50'); }
+      }
+    });
+  });
+
+  // default select 'paga'
+  const defaultBtn = document.querySelector('.entry-type-btn[data-entry-type="paga"]');
+  if (defaultBtn) defaultBtn.click();
+
+  // submit entry form
+  const entryForm = document.getElementById('entry-form');
+  if (entryForm) {
+    entryForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const selectedType = document.getElementById('entry-type-input').value;
+      const priceRaw = document.getElementById('entry-price').value;
+      const pixRaw = document.getElementById('entry-pix') ? document.getElementById('entry-pix').value : null;
+      const payload = {
+        type: selectedType,
+        modality: document.getElementById('entry-modality').value,
+        category: document.getElementById('entry-category').value,
+        price: priceRaw ? Number(priceRaw.toString().replace(',','.')) : null,
+        pix_key: pixRaw || null,
+        quantity: Number(document.getElementById('entry-quantity').value || 0),
+        valid_from: document.getElementById('entry-valid-from').value || null,
+        valid_to: document.getElementById('entry-valid-to').value || null,
+        // minimal title/description so EventController validation passes
+        title: 'Inscrição - ' + (document.getElementById('entry-category').value || 'Evento'),
+        description: '',
+        start_date: new Date().toISOString(),
+        end_date: new Date().toISOString(),
+        registration_type: 'participante',
+        is_active: true,
+      };
+
+      // client-side validation
+      if (selectedType === 'paga') {
+        if (!payload.price || payload.price <= 0) {
+          setStatus('event-status', 'Informe um valor válido para inscrições pagas.', 'error');
+          return;
+        }
+        if (!payload.pix_key) {
+          setStatus('event-status', 'Informe a chave PIX para receber pagamentos.', 'error');
+          return;
+        }
+      }
+
+      try {
+        await adminFetch('/admin/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        setStatus('event-status', 'Entrada criada com sucesso.', 'success');
+        closeEntryModal();
+        await reloadEvents();
+      } catch (err) {
+        setStatus('event-status', err.message || 'Erro ao criar entrada.', 'error');
+      }
+    });
+  }
+});
 
 if (adminPage === 'admin-login') {
   initLoginPage();

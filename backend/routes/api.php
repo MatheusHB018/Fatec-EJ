@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\EditalController;
 use App\Http\Controllers\Admin\ContactSectionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\AuthController;
@@ -28,6 +29,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/products', [ProductController::class, 'publicIndex']);
 // Detalhes públicos de um produto
 Route::get('/products/{product}', [ProductController::class, 'publicShow']);
+// Eventos públicos (lista de eventos ativos)
+Route::get('/events', [EventController::class, 'publicIndex']);
 
 // Configurações públicas (nome da gestão, hero, sobre)
 Route::get('/settings', [SettingController::class, 'publicShow']);
@@ -62,6 +65,7 @@ Route::prefix('admin')->middleware('api.token')->group(function () {
     Route::apiResource('editals', EditalController::class)->except(['create', 'edit', 'show']);
 
     Route::apiResource('products', ProductController::class)->except(['create', 'edit']);
+    Route::apiResource('events', EventController::class)->except(['create', 'edit', 'show']);
 
     Route::get('contacts', [ContactController::class, 'index']);
     Route::get('contacts/{contact}', [ContactController::class, 'show']);

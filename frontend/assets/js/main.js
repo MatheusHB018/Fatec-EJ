@@ -127,6 +127,23 @@ function renderMenu(menuItems) {
     return;
   }
 
+  // Ensure the public menu contains an "Eventos" item so the page anchor remains
+  // available even if the backend DB doesn't include it yet. Insert before
+  // the 'editais' item when possible to keep a sensible order.
+  try {
+    const hasEventos = menuItems.some((m) => String(m.slug).toLowerCase() === 'eventos');
+    if (!hasEventos) {
+      const editaisIndex = menuItems.findIndex((m) => String(m.slug).toLowerCase() === 'editais');
+      const insertIndex = editaisIndex === -1 ? menuItems.length : editaisIndex;
+      const eventosItem = { label: 'Eventos', slug: 'eventos', position: insertIndex, is_active: true };
+      // create a new array so we don't unexpectedly mutate upstream state
+      menuItems = [...menuItems.slice(0, insertIndex), eventosItem, ...menuItems.slice(insertIndex)];
+    }
+  } catch (err) {
+    // If anything goes wrong, don't block rendering the rest of the menu
+    console.debug('menu fallback for eventos failed', err);
+  }
+
   const homeHrefPrefix = page === 'products' ? '../index.html#' : '#';
   const productsHref = page === 'products' ? 'produtos.html' : 'pages/produtos.html';
 
@@ -354,6 +371,51 @@ function renderHomeContent(payload) {
 
   renderMenu(payload.menu);
   renderFooter(site, payload.menu, payload.services, settings);
+}
+
+// Public events loader and renderer
+async function loadPublicEvents() {
+  const grid = document.getElementById('events-grid');
+  if (!grid) return;
+
+  try {
+    const url = `${API_BASE}/events`;
+    console.debug('[events] fetching public events from', url);
+    // use fetchJson for consistent error handling but log URL for debugging
+    const payload = await fetchJson('/events');
+    const events = Array.isArray(payload) ? payload : (payload.events || []);
+
+    if (!events.length) {
+      grid.innerHTML = `<article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6"><h3 class="mt-2 text-xl font-bold">Nenhum evento disponível</h3><p class="mt-2 text-slate-500">Ainda não há eventos públicos cadastrados. Volte em breve.</p></article>`;
+      return;
+    }
+
+    grid.innerHTML = events.map((ev) => {
+      const start = ev.start_date ? new Date(ev.start_date).toLocaleDateString('pt-BR') : null;
+      const end = ev.end_date ? new Date(ev.end_date).toLocaleDateString('pt-BR') : null;
+      const dateRange = start && end ? `${start} — ${end}` : (start || end) || '';
+      const price = ev.price ? formatPrice(ev.price) : (ev.entry_type === 'gratuita' ? 'Gratuito' : '');
+
+      return `
+        <article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+          <h3 class="mt-2 text-xl font-bold">${escapeHtml(ev.title)}</h3>
+          <p class="mt-2 text-slate-500 text-sm">${escapeHtml(ev.description || '').slice(0, 160)}</p>
+          <div class="mt-4 text-sm text-slate-600 flex items-center justify-between">
+            <div>${escapeHtml(ev.location || '')}</div>
+            <div>${escapeHtml(dateRange)}</div>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <div class="text-sm font-semibold text-red-800">${escapeHtml(price)}</div>
+            <a href="#eventos" class="inline-flex items-center gap-2 text-red-800 font-semibold">Saiba mais <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+        </article>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('failed to load public events', err);
+    // show a visible error in the events grid so it's obvious to the site admin/user
+    grid.innerHTML = `<article class="bg-white border border-rose-200 rounded-2xl shadow-sm p-6"><h3 class="mt-2 text-xl font-bold">Erro ao carregar eventos</h3><p class="mt-2 text-rose-600">${escapeHtml(err.message || String(err))}</p><p class="mt-2 text-sm text-slate-500">Verifique o console e as rotas do backend.</p></article>`;
+  }
 }
 
 function setContactStatus(message, variant) {
@@ -842,6 +904,8 @@ async function bootstrapHome() {
   const content = await fetchJson('/content');
   renderHomeContent(content);
   initContactForm();
+  // try to load public events into the newly added #events-grid
+  loadPublicEvents();
 }
 
 async function bootstrapProducts() {

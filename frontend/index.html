@@ -17,16 +17,17 @@
       <div class="h-20 flex items-center justify-between gap-6">
         <a href="#inicio" class="flex items-center gap-3 shrink-0">
           <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo Empresa Júnior FATEC" class="h-12 w-auto object-contain" />
-          <span class="hidden text-xl font-bold tracking-tight sm:inline">Empresa Júnior FATEC</span>
+          
         </a>
 
             <nav id="main-menu" class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-500">
-          <a href="#inicio" class="hover:text-pink-700 transition-colors">Início</a>
+          <a href="#inicio" class="hover:text-700 -colors">Início</a>
           <a href="#sobre" class="hover:text-pink-700 transition-colors">Sobre</a>
           <a href="#equipe" class="hover:text-pink-700 transition-colors">Equipe</a>
           <a href="#servicos" class="hover:text-pink-700 transition-colors">Serviços</a>
           <a href="#pilares" class="hover:text-red-800 transition-colors">Pilares</a>
           <a href="#projetos" class="hover:text-pink-700 transition-colors">Projetos</a>
+            <a href="#eventos" class="hover:text-pink-700 transition-colors">Eventos</a>
           <a href="#editais" class="hover:text-pink-700 transition-colors">Editais</a>
           <a href="#contato" class="hover:text-pink-700 transition-colors">Contato</a>
           <a href="pages/produtos.html" class="text-pink-700">Loja</a>
@@ -297,6 +298,25 @@
                 <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">Tailwind</span>
               </div>
             </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Eventos (seção pública) -->
+    <section id="eventos" class="py-16 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto">
+          <p class="text-xs font-bold tracking-[0.2em] uppercase text-red-800">Eventos</p>
+          <h2 class="mt-3 text-4xl font-extrabold">Cursos e Eventos</h2>
+          <p class="mt-3 text-slate-500">Fique por dentro das próximas atividades, cursos e eventos promovidos pela Empresa Júnior.</p>
+        </div>
+
+        <div id="events-grid" class="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Eventos serão injetados dinamicamente via JS quando houver um endpoint público -->
+          <article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 class="mt-2 text-xl font-bold">Nenhum evento disponível</h3>
+            <p class="mt-2 text-slate-500">Ainda não há eventos públicos cadastrados. Volte em breve.</p>
           </article>
         </div>
       </div>

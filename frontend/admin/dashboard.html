@@ -13,7 +13,7 @@
 </head>
 <body class="h-screen overflow-hidden bg-slate-50 font-[Inter] text-slate-800 antialiased" data-page="admin-dashboard">
   <div class="flex h-screen overflow-hidden bg-slate-50">
-    <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col">
+  <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col min-h-0">
       <div class="px-6 py-6">
         <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo Empresa Júnior FATEC" class="h-14 w-auto object-contain" />
         <h1 class="mt-4 text-3xl font-extrabold tracking-tight">
@@ -23,7 +23,7 @@
 
       <div class="px-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Menu</div>
 
-      <nav id="admin-sidebar-menu" class="mt-3 flex-1 space-y-1 px-2">
+  <nav id="admin-sidebar-menu" class="mt-3 flex-1 space-y-1 px-2 overflow-y-auto">
         <button type="button" data-section-target="dashboard" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
           <i class="fa-solid fa-chart-pie w-5 text-center"></i>
           Dashboard
@@ -31,6 +31,10 @@
         <button type="button" data-section-target="sobre" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
           <i class="fa-regular fa-circle-question w-5 text-center"></i>
           Sobre
+        </button>
+        <button type="button" data-section-target="eventos" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <i class="fa-regular fa-calendar w-5 text-center"></i>
+          Cursos/Eventos
         </button>
         <button type="button" data-section-target="equipe" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
           <i class="fa-solid fa-users w-5 text-center"></i>
@@ -118,6 +122,94 @@
               <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
               <p class="mt-2 text-slate-500">Visão geral do sistema com métricas, atividade recente e gráficos.</p>
             </div>
+      
+            <!-- Modal de Inscrição -->
+            <div id="entry-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+              <div class="absolute inset-0 bg-black/50" id="entry-modal-overlay"></div>
+              <div class="relative z-60 w-full max-w-2xl rounded-lg bg-white shadow-lg">
+                <div class="flex items-center justify-between rounded-t-md bg-indigo-100 px-6 py-4">
+                  <h3 class="text-lg font-semibold text-slate-900">Entrada</h3>
+                  <button id="entry-modal-close" class="text-slate-600 hover:text-slate-900">×</button>
+                </div>
+
+                <div class="p-6 space-y-4">
+                  <div class="flex gap-3">
+                    <button type="button" data-entry-type="gratuita" class="entry-type-btn flex-1 rounded-md border border-gray-300 bg-white px-4 py-3 text-center" aria-pressed="false"><i class="fa-solid fa-gift mr-2"></i>Gratuita</button>
+                    <button type="button" data-entry-type="paga" class="entry-type-btn flex-1 rounded-md border border-gray-300 bg-white px-4 py-3 text-center" aria-pressed="false"><i class="fa-solid fa-coins mr-2"></i>Paga</button>
+                    <button type="button" data-entry-type="doacao" class="entry-type-btn flex-1 rounded-md border border-gray-300 bg-white px-4 py-3 text-center" aria-pressed="false"><i class="fa-solid fa-hand-holding-heart mr-2"></i>Doação</button>
+                  </div>
+
+                  <form id="entry-form">
+                    <input type="hidden" name="type" id="entry-type-input" />
+                    <div class="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Modalidade</label>
+                        <select id="entry-modality" name="modality" class="w-full rounded-md border border-gray-200 px-3 py-2 text-slate-800 focus:ring-0">
+                          <option value="Presencial">Presencial</option>
+                          <option value="Online">Online</option>
+                          <option value="Híbrido">Híbrido</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Categoria</label>
+                        <input id="entry-category" name="category" type="text" placeholder="Exemplo: Estudante Graduação, Profissional Associado" class="w-full rounded-md border border-gray-200 px-3 py-2 text-slate-800 placeholder:text-slate-400" />
+                      </div>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2 mt-3">
+                      <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Valor</label>
+                        <div class="flex rounded-md border border-gray-200">
+                          <span class="inline-flex items-center px-3 text-slate-600">R$</span>
+                          <input id="entry-price" name="price" type="text" class="w-full rounded-r-md border-0 px-3 py-2 text-slate-800 placeholder:text-slate-400" placeholder="0,00" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Quantidade</label>
+                        <input id="entry-quantity" name="quantity" type="number" min="0" value="0" class="w-full rounded-md border border-gray-200 px-3 py-2 text-slate-800" />
+                      </div>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2 mt-3">
+                      <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Válido de</label>
+                        <input id="entry-valid-from" name="valid_from" type="date" class="w-full rounded-md border border-gray-200 px-3 py-2 text-slate-800" />
+                      </div>
+                      <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Válido até</label>
+                        <input id="entry-valid-to" name="valid_to" type="date" class="w-full rounded-md border border-gray-200 px-3 py-2 text-slate-800" />
+                      </div>
+                    </div>
+
+                    <!-- PIX key moved into modal -->
+                    <div class="mt-4">
+                      <label for="entry-pix" class="block text-sm font-medium text-slate-700">Chave PIX (Para Recebimento)</label>
+                      <input id="entry-pix" name="pix_key" type="text" placeholder="CNPJ, E-mail, Telefone ou Chave Aleatória" class="mt-1 block w-full border border-gray-200 rounded-md px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-800" />
+                    </div>
+
+                    <div class="mt-3">
+                      <label class="inline-flex items-center gap-3">
+                        <input id="entry-bulk" type="checkbox" name="bulk" class="h-4 w-4 rounded border-gray-300 text-red-800" />
+                        <span class="text-sm text-slate-700">Realizar venda por lotes</span>
+                      </label>
+                    </div>
+
+                    <div class="mt-4">
+                      <a href="#" id="entry-add-desc" class="inline-flex items-center gap-2 text-blue-600 hover:underline"><i class="fa-solid fa-plus"></i> Adicione descrição, tipo de compra e quantidades</a>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-end gap-3">
+                      <button type="button" id="entry-cancel" class="rounded-md border border-gray-200 px-4 py-2 text-sm">Cancelar</button>
+                      <button type="submit" class="rounded-md bg-[#B91C1C] px-4 py-2 text-sm font-semibold text-white">Salvar Entrada</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            
 
             <div id="dashboard-metrics" class="grid gap-5 md:grid-cols-2 xl:grid-cols-4"></div>
 
@@ -349,6 +441,104 @@
             </section>
 
             <div id="services-list" class="grid gap-4 md:grid-cols-2"></div>
+          </section>
+
+          <section data-admin-section="eventos" class="admin-section hidden space-y-8">
+            <div class="flex items-start justify-between">
+              <div>
+                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Cursos / Eventos</h1>
+                <p class="mt-2 text-slate-500">Gerencie cursos e eventos: crie, edite e exclua inscrições.</p>
+              </div>
+              <div class="ml-4">
+              </div>
+            </div>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Adicionar / Editar Evento</h2>
+
+              <form id="event-form" class="mt-6 space-y-5">
+                <input id="event-id" type="hidden" />
+
+                <div>
+                  <label for="event-title" class="mb-2 block text-sm font-semibold text-slate-700">Título</label>
+                  <input id="event-title" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                </div>
+
+                <div>
+                  <label for="event-description" class="mb-2 block text-sm font-semibold text-slate-700">Descrição</label>
+                  <textarea id="event-description" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="event-start" class="mb-2 block text-sm font-semibold text-slate-700">Início</label>
+                    <input id="event-start" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                  </div>
+
+                  <div>
+                    <label for="event-end" class="mb-2 block text-sm font-semibold text-slate-700">Fim</label>
+                    <input id="event-end" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                  </div>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label for="event-location" class="mb-2 block text-sm font-semibold text-slate-700">Local</label>
+                    <input id="event-location" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" />
+                  </div>
+
+                  <div>
+                    <label for="event-type" class="mb-2 block text-sm font-semibold text-slate-700">Tipo de inscrição</label>
+                    <div class="flex items-center gap-3">
+                      <select id="event-type" class="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100">
+                        <option value="participante">Participante</option>
+                        <option value="palestrante">Palestrante</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2 mt-3">
+                  <div>
+                    <label for="event-price" class="mb-2 block text-sm font-semibold text-slate-700">Valor</label>
+                    <div class="flex rounded-md border border-gray-200">
+                      <span class="inline-flex items-center px-3 text-slate-600">R$</span>
+                      <input id="event-price" name="price" type="text" class="w-full rounded-r-md border-0 px-3 py-2 text-slate-800 placeholder:text-slate-400" placeholder="0,00" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="event-pix" class="mb-2 block text-sm font-semibold text-slate-700">Chave PIX</label>
+                    <input id="event-pix" name="pix_key" type="text" class="w-full rounded-md border border-gray-200 px-3 py-2 text-slate-800 placeholder:text-slate-400" placeholder="CNPJ, E-mail, Telefone ou Chave Aleatória" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
+                    <input id="event-active" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-red-800 focus:ring-red-200" />
+                    <span class="text-sm font-semibold text-slate-700">Ativo</span>
+                  </label>
+                </div>
+
+                <p id="event-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                <div class="flex flex-wrap gap-3">
+                  <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#B91C1C] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-900">
+                    <i class="fa-solid fa-check"></i>
+                    Salvar Evento
+                  </button>
+
+                  <button id="event-cancel-edit" type="button" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800">
+                    Cancelar Edição
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="text-xl font-bold text-slate-900">Eventos Cadastrados</h2>
+              <div id="events-list" class="mt-6"></div>
+            </div>
           </section>
 
           <section data-admin-section="pilares" class="admin-section hidden space-y-8">
