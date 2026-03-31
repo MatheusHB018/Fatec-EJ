@@ -2246,8 +2246,8 @@ document.addEventListener('DOMContentLoaded', () => {
         price: priceRaw ? Number(priceRaw.toString().replace(',','.')) : null,
         pix_key: pixRaw || null,
         quantity: Number(document.getElementById('entry-quantity').value || 0),
-        valid_from: document.getElementById('entry-valid-from').value || null,
-        valid_to: document.getElementById('entry-valid-to').value || null,
+        valid_from: document.getElementById('entry-valid-from').value ? document.getElementById('entry-valid-from').value.replace('T', ' ') + ':00' : null,
+        valid_to: document.getElementById('entry-valid-to').value ? document.getElementById('entry-valid-to').value.replace('T', ' ') + ':00' : null,
         // minimal title/description so EventController validation passes
         title: 'Inscrição - ' + (document.getElementById('entry-category').value || 'Evento'),
         description: '',
