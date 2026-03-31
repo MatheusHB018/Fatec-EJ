@@ -54,6 +54,172 @@ function formatPrice(value) {
   }).format(Number(value || 0));
 }
 
+function formatCpf(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 11);
+  let masked = digits;
+  masked = masked.replace(/(\d{3})(\d)/, '$1.$2');
+  masked = masked.replace(/(\d{3})(\d)/, '$1.$2');
+  masked = masked.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  return masked;
+}
+
+function isValidCpf(cpf) {
+  const stripped = String(cpf || '').replace(/\D/g, '');
+  if (stripped.length !== 11) return false;
+  if (/^(\d)\1+$/.test(stripped)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += Number(stripped.charAt(i)) * (10 - i);
+  }
+  let rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== Number(stripped.charAt(9))) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += Number(stripped.charAt(i)) * (11 - i);
+  }
+  rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  return rev === Number(stripped.charAt(10));
+}
+function initEventRegistrationForm() {
+  const form = document.getElementById('event-registration-form');
+  const statusEl = document.getElementById('event-registration-status');
+  const cpfEl = document.getElementById('registration-cpf');
+  const eventIdInput = document.getElementById('registration-event-id');
+  const eventTitleEl = document.getElementById('event-details-title');
+  const eventDateEl = document.getElementById('event-details-date');
+  const eventTimeEl = document.getElementById('event-details-time');
+  const eventLocationEl = document.getElementById('event-details-location');
+  const eventSpeakerEl = document.getElementById('event-details-speaker');
+  const eventDescriptionEl = document.getElementById('event-details-description');
+  const eventPriceEl = document.getElementById('event-details-price');
+
+  const eventIdFromQuery = new URLSearchParams(window.location.search).get('event_id');
+
+  const loadAndShowEvent = () => {
+    return fetchJson('/events')
+      .then((payload) => {
+        const events = Array.isArray(payload) ? payload : (payload.events || []);
+        const eventItem = events.find((ev) => String(ev.id) === String(eventIdFromQuery));
+        if (!eventItem) {
+          if (eventTitleEl) eventTitleEl.textContent = 'Evento não encontrado';
+          if (eventDescriptionEl) eventDescriptionEl.textContent = 'Nenhum evento disponível para inscrição com os dados fornecidos.';
+          if (form) form.querySelector('button[type="submit"]').disabled = true;
+          return;
+        }
+
+        if (eventTitleEl) eventTitleEl.textContent = `Inscrição: ${eventItem.title}`;
+        if (eventDateEl) eventDateEl.textContent = (eventItem.start_date && eventItem.end_date)
+          ? `${new Date(eventItem.start_date).toLocaleDateString('pt-BR')} — ${new Date(eventItem.end_date).toLocaleDateString('pt-BR')}`
+          : (eventItem.start_date ? new Date(eventItem.start_date).toLocaleDateString('pt-BR') : '-');
+        if (eventTimeEl) eventTimeEl.textContent = (eventItem.start_date && eventItem.end_date)
+          ? `${new Date(eventItem.start_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} — ${new Date(eventItem.end_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+          : (eventItem.start_date ? new Date(eventItem.start_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-');
+        if (eventLocationEl) eventLocationEl.textContent = eventItem.location || '-';
+        if (eventSpeakerEl) eventSpeakerEl.textContent = eventItem.category || '-';
+        if (eventDescriptionEl) eventDescriptionEl.textContent = eventItem.description || '-';
+        if (eventPriceEl) eventPriceEl.textContent = eventItem.price != null ? formatPrice(eventItem.price) : 'Gratuito';
+        if (eventIdInput) eventIdInput.value = eventItem.id;
+      })
+      .catch((err) => {
+        console.error('Erro ao carregar evento para inscrição:', err);
+        if (eventTitleEl) eventTitleEl.textContent = 'Erro ao carregar evento';
+        if (form) form.querySelector('button[type="submit"]').disabled = true;
+      });
+  };
+
+  if (page === 'event-registration') {
+    if (!eventIdFromQuery) {
+      if (eventTitleEl) eventTitleEl.textContent = 'Nenhum evento selecionado';
+      if (eventDescriptionEl) eventDescriptionEl.textContent = 'Informe o evento via URL.';
+      if (form) form.querySelector('button[type="submit"]').disabled = true;
+    } else {
+      loadAndShowEvent();
+    }
+  }
+
+  if (!form) return;
+
+  if (cpfEl) {
+    cpfEl.addEventListener('input', () => {
+      cpfEl.value = formatCpf(cpfEl.value);
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const cpf = formData.get('cpf') ? String(formData.get('cpf')).trim() : '';
+
+    if (!isValidCpf(cpf)) {
+      if (statusEl) {
+        statusEl.textContent = 'CPF inválido. Verifique os dígitos e tente novamente.';
+        statusEl.className = 'mt-3 text-sm text-rose-600';
+      }
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/event-registrations`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.message || 'Erro ao enviar inscrição.');
+      }
+
+      form.reset();
+      if (statusEl) {
+        statusEl.textContent = payload.message || 'Inscrição enviada com sucesso!';
+        statusEl.className = 'mt-3 text-sm text-emerald-700';
+      }
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = err.message || 'Falha no envio.';
+        statusEl.className = 'mt-3 text-sm text-rose-600';
+      }
+    }
+  });
+}
+
+function parseDateTime(value) {
+  if (!value) return null;
+
+  try {
+    // Verifica se o valor inclui horário (formato YYYY-MM-DDTHH:mm) ou se é apenas data
+    const isDateTime = value.includes('T');
+    const [datePart, timePart] = isDateTime ? value.split('T') : [value, '00:00'];
+
+    // Extrai os valores numéricos
+    const [year, month, day] = datePart.split('-');
+    const [hour, minute] = timePart.split(':');
+
+    // O mês no JavaScript começa em 0 (Janeiro = 0, Março = 2, etc.), por isso month - 1
+    const date = new Date(year, month - 1, day, hour, minute || 0);
+
+    return Number.isNaN(date.getTime()) ? null : date;
+  } catch (error) {
+    return null;
+  }
+}
+
+function getEventTimingState(event) {
+  const now = new Date();
+  const start = parseDateTime(event.start_date);
+  const end = parseDateTime(event.end_date);
+
+  const isUpcoming = start && now < start;
+  const isEnded = end && now > end;
+  const isOngoing = start && end && now >= start && now <= end;
+
+  return { start, end, isUpcoming, isOngoing, isEnded };
+}
+
 function iconClass(icon) {
   const map = {
     globe: 'fa-solid fa-globe',
@@ -377,10 +543,12 @@ function renderHomeContent(payload) {
 async function loadPublicEvents() {
   const grid = document.getElementById('events-grid');
   if (!grid) return;
-
+  console.log("Teste");
   try {
     const url = `${API_BASE}/events`;
     console.debug('[events] fetching public events from', url);
+
+    
     // use fetchJson for consistent error handling but log URL for debugging
     const payload = await fetchJson('/events');
     const events = Array.isArray(payload) ? payload : (payload.events || []);
@@ -391,22 +559,37 @@ async function loadPublicEvents() {
     }
 
     grid.innerHTML = events.map((ev) => {
-      const start = ev.start_date ? new Date(ev.start_date).toLocaleDateString('pt-BR') : null;
-      const end = ev.end_date ? new Date(ev.end_date).toLocaleDateString('pt-BR') : null;
-      const dateRange = start && end ? `${start} — ${end}` : (start || end) || '';
-      const price = ev.price ? formatPrice(ev.price) : (ev.entry_type === 'gratuita' ? 'Gratuito' : '');
+      const start = ev.start_date ? parseDateTime(ev.start_date) : null;
+      const end = ev.end_date ? parseDateTime(ev.end_date) : null;
+      const dateRange = start && end ? `${start.toLocaleDateString('pt-BR')} — ${end.toLocaleDateString('pt-BR')}` : (start ? start.toLocaleDateString('pt-BR') : end ? end.toLocaleDateString('pt-BR') : '');
+      const price = Number(ev.price || 0);
+      const timing = getEventTimingState(ev);
+
+      let actionEl = '';
+      if (timing.isEnded) {
+        actionEl = `<span class="rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-rose-600">Encerrado</span>`;
+      } else if (timing.isUpcoming) {
+        actionEl = `<span class="rounded-xl bg-yellow-50 px-3 py-1 text-xs font-semibold text-amber-700">Inscrições abrem em ${start ? start.toLocaleString('pt-BR') : 'em breve'}</span>`;
+      } else if (timing.isOngoing) {
+        // link to registration page with selected event
+        const encodedTitle = encodeURIComponent(ev.title || 'Evento');
+        actionEl = `<a href="pages/inscricao.html?event_id=${encodeURIComponent(ev.id)}&event_title=${encodedTitle}" class="inline-flex items-center gap-2 text-red-800 font-semibold">Increvaci <i class="fa-solid fa-arrow-right"></i></a>`;
+      } else {
+        actionEl = `<span class="rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Verifique datas do evento</span>`;
+      }
 
       return `
         <article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
           <h3 class="mt-2 text-xl font-bold">${escapeHtml(ev.title)}</h3>
-          <p class="mt-2 text-slate-500 text-sm">${escapeHtml(ev.description || '').slice(0, 160)}</p>
+          <p class="mt-2 text-slate-500 text-sm">${escapeHtml((ev.description || '').slice(0, 160))}</p>
           <div class="mt-4 text-sm text-slate-600 flex items-center justify-between">
             <div>${escapeHtml(ev.location || '')}</div>
             <div>${escapeHtml(dateRange)}</div>
           </div>
+          <p class="mt-2 text-xs text-slate-500">Início: ${start ? start.toLocaleString('pt-BR') : 'Não informado'} · Fim: ${end ? end.toLocaleString('pt-BR') : 'Não informado'}</p>
           <div class="mt-4 flex items-center justify-between">
-            <div class="text-sm font-semibold text-red-800">${escapeHtml(price)}</div>
-            <a href="#eventos" class="inline-flex items-center gap-2 text-red-800 font-semibold">Saiba mais <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="text-sm font-semibold text-red-800">${formatPrice(price)}</div>
+            ${actionEl}
           </div>
         </article>
       `;
@@ -487,7 +670,6 @@ function initContactForm() {
       payload.course = document.getElementById('curso').value.trim();
       payload.period = document.getElementById('periodo').value.trim();
     }
-
     try {
       const response = await fetchJson('/contacts', {
         method: 'POST',
@@ -906,6 +1088,7 @@ async function bootstrapHome() {
   initContactForm();
   // try to load public events into the newly added #events-grid
   loadPublicEvents();
+  initEventRegistrationForm();
 }
 
 async function bootstrapProducts() {
@@ -938,6 +1121,12 @@ async function bootstrapPage() {
 
     if (page === 'products') {
       await bootstrapProducts();
+      return;
+    }
+
+    if (page === 'event-registration') {
+      initEventRegistrationForm();
+      return;
     }
   } catch (error) {
     console.error(error);

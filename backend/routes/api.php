@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\TeamMemberController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\EditalController;
+use App\Http\Controllers\Admin\InscritoController;
 use App\Http\Controllers\Admin\ContactSectionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ProductController;
@@ -31,6 +32,9 @@ Route::get('/products', [ProductController::class, 'publicIndex']);
 Route::get('/products/{product}', [ProductController::class, 'publicShow']);
 // Eventos públicos (lista de eventos ativos)
 Route::get('/events', [EventController::class, 'publicIndex']);
+
+// Inscrição em evento/cursos (formulário público)
+Route::post('/event-registrations', [\App\Http\Controllers\PublicEventRegistrationController::class, 'store']);
 
 // Configurações públicas (nome da gestão, hero, sobre)
 Route::get('/settings', [SettingController::class, 'publicShow']);
@@ -66,6 +70,8 @@ Route::prefix('admin')->middleware('api.token')->group(function () {
 
     Route::apiResource('products', ProductController::class)->except(['create', 'edit']);
     Route::apiResource('events', EventController::class)->except(['create', 'edit', 'show']);
+    Route::get('inscritos', [InscritoController::class, 'index']);
+    Route::delete('inscritos/{inscrito}', [InscritoController::class, 'destroy']);
 
     Route::get('contacts', [ContactController::class, 'index']);
     Route::get('contacts/{contact}', [ContactController::class, 'show']);

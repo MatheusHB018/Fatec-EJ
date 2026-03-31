@@ -31,6 +31,7 @@ let projects = [];
 let editals = [];
 let contactMessages = [];
 let users = [];
+let inscritos = [];
 
 // Resolve media URLs returned by the API to a URL reachable from the frontend/admin pages.
 function resolveMediaUrlAdmin(url) {
@@ -82,10 +83,11 @@ function formatDate(value) {
     return '-';
   }
 
+  const noUTC = value.replace('Z', '');
   return new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'short',
     timeStyle: 'short',
-  }).format(new Date(value));
+  }).format(new Date(noUTC));
 }
 
 function setActiveAdminSection(sectionName) {
@@ -1351,6 +1353,7 @@ async function initDashboardPage() {
       if (target === 'eventos') {
         try {
           await reloadEvents();
+          await reloadInscritos();
         } catch (err) {
           setStatus('dashboard-status', 'Erro ao carregar eventos: ' + (err.message || err), 'error');
         }
@@ -2074,6 +2077,45 @@ function renderEventsList() {
   }).join('');
 }
 
+function renderInscritosList() {
+  const container = document.getElementById('inscritos-list');
+  if (!container) return;
+
+  if (!inscritos || inscritos.length === 0) {
+    container.innerHTML = '<p class="text-sm text-slate-500">Nenhum inscrito encontrado.</p>';
+    return;
+  }
+
+  container.innerHTML = inscritos.map((inscrito) => {
+    const eventName = inscrito.event ? inscrito.event.title : 'Evento removido';
+    return `
+    <article class="rounded-xl border border-gray-200 p-4 mb-3 bg-white">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="font-semibold text-slate-900">${escapeHtml(inscrito.name)}</h3>
+          <p class="text-sm text-slate-500">${escapeHtml(inscrito.email)} • ${escapeHtml(inscrito.whatsapp)}</p>
+          <p class="text-xs text-slate-400">CPF: ${escapeHtml(inscrito.cpf)}</p>
+          <p class="text-xs text-slate-400">Evento: ${escapeHtml(eventName)}</p>
+          <p class="text-xs text-slate-400">Status: ${escapeHtml(inscrito.status)}</p>
+        </div>
+        <button type="button" data-inscrito-action="delete" data-inscrito-id="${inscrito.id}" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50">Excluir</button>
+      </div>
+    </article>
+    `;
+  }).join('');
+}
+
+async function reloadInscritos() {
+  try {
+    const payload = await adminFetch('/admin/inscritos');
+    inscritos = Array.isArray(payload) ? payload : (payload.data || payload || []);
+    renderInscritosList();
+  } catch (err) {
+    console.error('Erro ao carregar inscritos', err);
+    throw err;
+  }
+}
+
 function resetEventForm() {
   document.getElementById('event-id').value = '';
   document.getElementById('event-title').value = '';
@@ -2081,7 +2123,6 @@ function resetEventForm() {
   document.getElementById('event-start').value = '';
   document.getElementById('event-end').value = '';
   document.getElementById('event-location').value = '';
-  document.getElementById('event-type').value = 'participante';
   document.getElementById('event-price').value = '';
   document.getElementById('event-pix').value = '';
   document.getElementById('event-active').checked = true;
@@ -2098,7 +2139,6 @@ function fillEventForm(ev) {
     if (ev.end_date) document.getElementById('event-end').value = new Date(ev.end_date).toISOString().slice(0,16);
   } catch (e) {}
   document.getElementById('event-location').value = ev.location || '';
-  document.getElementById('event-type').value = ev.registration_type || 'participante';
   document.getElementById('event-price').value = ev.price || '';
   document.getElementById('event-pix').value = ev.pix_key || '';
   document.getElementById('event-active').checked = Boolean(ev.is_active);
@@ -2148,7 +2188,6 @@ if (eventForm) {
       start_date: document.getElementById('event-start').value,
       end_date: document.getElementById('event-end').value,
       location: document.getElementById('event-location').value.trim(),
-      registration_type: document.getElementById('event-type').value,
       price: document.getElementById('event-price').value ? Number(document.getElementById('event-price').value.replace(',', '.')) : 0,
       pix_key: document.getElementById('event-pix').value.trim(),
       is_active: document.getElementById('event-active').checked,
@@ -2165,6 +2204,27 @@ if (eventForm) {
       setStatus('event-status', err.message || 'Erro ao salvar evento.', 'error');
     }
   });
+
+document.addEventListener('click', async (ev) => {
+  const trigger = ev.target.closest && ev.target.closest('[data-inscrito-action]');
+  if (!trigger) return;
+
+  const action = trigger.dataset.inscritoAction;
+  const inscritoId = trigger.dataset.inscritoId;
+
+  if (action === 'delete') {
+    const confirmed = window.confirm('Deseja remover esse inscrito?');
+    if (!confirmed) return;
+
+    try {
+      await adminFetch(`/admin/inscritos/${inscritoId}`, { method: 'DELETE' });
+      setStatus('event-status', 'Inscrito removido com sucesso.', 'success');
+      await reloadInscritos();
+    } catch (err) {
+      setStatus('event-status', err.message || 'Erro ao remover inscrito.', 'error');
+    }
+  }
+});
 
   const cancelBtn = document.getElementById('event-cancel-edit');
   if (cancelBtn) cancelBtn.addEventListener('click', (ev) => { ev.preventDefault(); resetEventForm(); setStatus('event-status', 'Edição cancelada.', 'success'); });

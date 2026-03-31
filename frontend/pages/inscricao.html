@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inscrição em Curso ou Evento</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body class="bg-slate-100 text-slate-900 antialiased" data-page="event-registration">
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="h-20 flex items-center justify-between">
+        <a href="../index.html" class="flex items-center gap-3">
+          <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo EJ FATEC" class="h-12 w-auto" />
+        </a>
+        <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-500">
+          <a href="../index.html#inicio" class="hover:text-pink-700">Início</a>
+          <a href="../index.html#sobre" class="hover:text-pink-700">Sobre</a>
+          <a href="../index.html#servicos" class="hover:text-pink-700">Serviços</a>
+          <a href="../index.html#projetos" class="hover:text-pink-700">Projetos</a>
+          <a href="../index.html#eventos" class="hover:text-pink-700">Eventos</a>
+          <a href="../index.html#contato" class="hover:text-pink-700">Contato</a>
+          <a href="produtos.html" class="hover:text-pink-700">Loja</a>
+        </nav>
+        <a href="../admin/login.html" class="rounded-lg bg-red-800 px-4 py-2 text-white text-sm font-semibold hover:bg-red-700">Login</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="py-12">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <h1 class="text-4xl font-extrabold text-center text-slate-900">Inscrição: <span id="event-details-title">[Nome do Evento Exemplo]</span></h1>
+      <div class="mt-10 grid lg:grid-cols-2 gap-8">
+        <aside class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-slate-900">Informações do Evento</h2>
+          <ul class="mt-4 space-y-3 text-slate-700">
+            <li><i class="fa-regular fa-calendar-days mr-2 text-red-800"></i><strong>Data / Hora:</strong> <span id="event-details-date">--</span> às <span id="event-details-time">--</span></li>
+            <li><i class="fa-solid fa-location-dot mr-2 text-red-800"></i><strong>Local:</strong> <span id="event-details-location">--</span></li>
+            <li><i class="fa-solid fa-circle-info mr-2 text-red-800"></i><strong>Descrição:</strong> <span id="event-details-description">--</span></li>
+            <li><i class="fa-solid fa-user-tie mr-2 text-red-800"></i><strong>Speaker:</strong> <span id="event-details-speaker">--</span></li>
+          </ul>
+
+          <h3 class="mt-8 text-xl font-bold text-slate-900">Instruções de Pagamento</h3>
+          <div class="mt-3 text-slate-700 space-y-2 text-sm">
+            <p><strong>PIX</strong></p>
+            <p>Valor: <span id="event-details-price">R$ 0,00</span></p>
+            <p>Chave PIX: <strong id="event-details-pix">CNPJ 12.345.678/0001-90</strong></p>
+            <p>Faça o PIX antes de preencher e anexe o comprovante.</p>
+          </div>
+        </aside>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="text-2xl font-bold text-slate-900">Finalize sua Inscrição</h2>
+          <form id="event-registration-form" class="mt-6 space-y-4" enctype="multipart/form-data">
+            <input type="hidden" id="registration-event-id" name="event_id" />
+            <div>
+              <label for="registration-name" class="block text-sm font-medium text-slate-700">Nome Completo</label>
+              <input id="registration-name" name="name" type="text" required class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" />
+            </div>
+            <div>
+              <label for="registration-instituicao" class="block text-sm font-medium text-slate-700">Instituição</label>
+              <input id="registration-instituicao" name="institution" type="text" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" />
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label for="registration-email" class="block text-sm font-medium text-slate-700">E-mail</label>
+                <input id="registration-email" name="email" type="email" required class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" />
+              </div>
+              <div>
+                <label for="registration-whatsapp" class="block text-sm font-medium text-slate-700">WhatsApp</label>
+                <input id="registration-whatsapp" name="whatsapp" type="tel" required class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="11 91234-5678" />
+              </div>
+            </div>
+            <div>
+              <label for="registration-cpf" class="block text-sm font-medium text-slate-700">CPF</label>
+              <input id="registration-cpf" name="cpf" type="text" required maxlength="14" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="000.000.000-00" />
+            </div>
+            <div>
+              <label for="registration-comprovante" class="block text-sm font-medium text-slate-700">Comprovante (PNG/JPEG/PDF)</label>
+              <input id="registration-comprovante" name="comprovante" type="file" accept="image/png,image/jpeg,application/pdf" required class="mt-1 block w-full" />
+            </div>
+            <div>
+              <label for="registration-message" class="block text-sm font-medium text-slate-700">Observações</label>
+              <textarea id="registration-message" name="message" rows="3" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2"></textarea>
+            </div>
+            <button type="submit" class="w-full rounded-lg bg-red-800 text-white py-3 font-semibold hover:bg-red-700 transition">Finalizar Inscrição</button>
+            <p id="event-registration-status" class="text-sm text-slate-500"></p>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-slate-900 text-slate-200">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 py-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div>
+        <a href="../index.html#inicio" class="flex items-center gap-3">
+          <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo EJ FATEC" class="h-14 w-auto object-contain brightness-0 invert" />
+          <span class="hidden text-xl font-bold text-white sm:inline">Empresa Júnior FATEC</span>
+        </a>
+        <p class="mt-4 text-slate-400">Empresa Júnior da Faculdade de Tecnologia. Soluções digitais com qualidade acadêmica.</p>
+      </div>
+      <div>
+        <h4 class="font-bold text-white">Links Rápidos</h4>
+        <ul class="mt-4 space-y-2 text-slate-400">
+          <li><a href="../index.html#inicio" class="hover:text-red-300">Início</a></li>
+          <li><a href="../index.html#sobre" class="hover:text-red-300">Sobre</a></li>
+          <li><a href="../index.html#servicos" class="hover:text-red-300">Serviços</a></li>
+          <li><a href="../index.html#projetos" class="hover:text-red-300">Projetos</a></li>
+          <li><a href="../index.html#contato" class="hover:text-red-300">Contato</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-bold text-white">Serviços</h4>
+        <ul class="mt-4 space-y-2 text-slate-400">
+          <li>Desenvolvimento Web</li>
+          <li>Apps Mobile</li>
+          <li>Design UI/UX</li>
+          <li>Consultoria TI</li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-bold text-white">Redes Sociais</h4>
+        <div class="mt-4 flex gap-3">
+          <a href="#" class="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-red-800 transition-colors"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" class="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-red-800 transition-colors"><i class="fa-brands fa-linkedin-in"></i></a>
+          <a href="#" class="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-red-800 transition-colors"><i class="fa-brands fa-github"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="border-t border-slate-800">
+      <div class="max-w-7xl mx-auto px-6 lg:px-8 py-5 text-center text-xs text-slate-500">© 2026 Empresa Júnior FATEC. Todos os direitos reservados.</div>
+    </div>
+  </footer>
+
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>

@@ -19,16 +19,11 @@ class EventController extends Controller
     public function publicIndex()
     {
         // Public listing: return only currently active (ongoing) events
-        // i.e. start_date <= now <= end_date and is_active = true
-        $now = now();
-
-        $events = Event::where('is_active', true)
-            ->activeNow()
-            ->orderBy('start_date', 'asc')
-            ->get()
-            ->map(function ($ev) use ($now) {
-                return array_merge($ev->toArray(), ['status' => 'ongoing']);
-            });
+        // i.e. events that are marked active, with frontend showing seu status baseado nas datas
+        // start_date and end_date serão usados pelo frontend para calcular se o evento está agendado, em andamento ou encerrado.
+           $events = Event::where('is_active', '1')
+              ->orderBy('start_date', 'asc')
+              ->get();
 
         return response()->json(['events' => $events]);
     }
@@ -41,7 +36,7 @@ class EventController extends Controller
             $payload['entry_type'] = $payload['type'];
         }
 
-        $data = $request->only(['title','description','start_date','end_date','location','registration_type','entry_type','modality','category','price','quantity','valid_from','valid_to','pix_key','is_active']);
+    $data = $request->only(['title','description','start_date','end_date','location','entry_type','modality','category','price','quantity','valid_from','valid_to','pix_key','is_active']);
 
         $validator = Validator::make($data, [
             'title' => 'required|string|max:255',
@@ -49,7 +44,6 @@ class EventController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date',
             'location' => 'nullable|string|max:255',
-            'registration_type' => 'required|in:palestrante,participante',
             'entry_type' => 'nullable|in:gratuita,paga,doacao',
             'modality' => 'nullable|string',
             'category' => 'nullable|string|max:255',
@@ -94,7 +88,7 @@ class EventController extends Controller
             $payload['entry_type'] = $payload['type'];
         }
 
-        $data = $request->only(['title','description','start_date','end_date','location','registration_type','entry_type','modality','category','price','quantity','valid_from','valid_to','pix_key','is_active']);
+    $data = $request->only(['title','description','start_date','end_date','location','entry_type','modality','category','price','quantity','valid_from','valid_to','pix_key','is_active']);
 
         $validator = Validator::make($data, [
             'title' => 'required|string|max:255',
@@ -102,7 +96,6 @@ class EventController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date',
             'location' => 'nullable|string|max:255',
-            'registration_type' => 'required|in:palestrante,participante',
             'entry_type' => 'nullable|in:gratuita,paga,doacao',
             'modality' => 'nullable|string',
             'category' => 'nullable|string|max:255',
@@ -129,6 +122,7 @@ class EventController extends Controller
                 return response()->json(['message' => 'valid_from must be before or equal to valid_to'], 422);
             }
         }
+
 
         $event->update($data);
 
