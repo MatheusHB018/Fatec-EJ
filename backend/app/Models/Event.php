@@ -39,8 +39,8 @@ class Event extends Model
         'price' => 'decimal:2',
         'is_active' => 'boolean',
         'quantity' => 'integer',
-        'valid_from' => 'date',
-        'valid_to' => 'date',
+        'valid_from' => 'datetime',
+        'valid_to' => 'datetime',
     ];
 
     // Formatter for price when getting/setting (suggested in task)
