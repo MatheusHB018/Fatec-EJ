@@ -45,3 +45,25 @@ jobs:
 
       - name: Execute tests
         run: php artisan test
+              - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Prepare SQLite database
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Set CI environment
+        run: |
+          {
+            echo "APP_ENV=testing"
+            echo "APP_DEBUG=true"
+            echo "DB_CONNECTION=sqlite"
+            echo "DB_DATABASE=$(pwd)/database/database.sqlite"
+            echo "CACHE_STORE=array"
+            echo "SESSION_DRIVER=array"
+            echo "QUEUE_CONNECTION=sync"
+          } >> .env
+
+      - name: Generate application key
+        run: php artisan key:generate --force
