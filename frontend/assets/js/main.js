@@ -63,6 +63,64 @@ function formatCpf(value) {
   return masked;
 }
 
+function extractEventSchedules(eventItem) {
+  if (!eventItem || typeof eventItem !== 'object') {
+    return [];
+  }
+
+  if (Array.isArray(eventItem.schedules) && eventItem.schedules.length > 0) {
+    return eventItem.schedules
+      .map((schedule) => ({
+        start_date: schedule?.start_date || '',
+        end_date: schedule?.end_date || '',
+      }))
+      .filter((schedule) => schedule.start_date);
+  }
+
+  if (Array.isArray(eventItem.start_dates) && eventItem.start_dates.length > 0) {
+    return eventItem.start_dates.map((startDate, index) => ({
+      start_date: startDate,
+      end_date: Array.isArray(eventItem.end_dates) ? (eventItem.end_dates[index] || startDate) : startDate,
+    }));
+  }
+
+  if (eventItem.start_date) {
+    return [{
+      start_date: eventItem.start_date,
+      end_date: eventItem.end_date || eventItem.start_date,
+    }];
+  }
+
+  return [];
+}
+
+function formatScheduleLabel(schedule) {
+  const start = parseDateTime(schedule?.start_date || '');
+  const end = parseDateTime(schedule?.end_date || '');
+
+  if (!start) {
+    return '-';
+  }
+
+  const dateLabel = start.toLocaleDateString('pt-BR');
+  const startHour = start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const endHour = end
+    ? end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    : startHour;
+
+  return `${dateLabel} das ${startHour} as ${endHour}`;
+}
+
+function formatCardFirstSchedule(schedule) {
+  const start = parseDateTime(schedule?.start_date || '');
+
+  if (!start) {
+    return 'Data a confirmar';
+  }
+
+  return `${start.toLocaleDateString('pt-BR')} - ${start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
 function isValidCpf(cpf) {
   const stripped = String(cpf || '').replace(/\D/g, '');
   if (stripped.length !== 11) return false;
@@ -88,12 +146,84 @@ function initEventRegistrationForm() {
   const cpfEl = document.getElementById('registration-cpf');
   const eventIdInput = document.getElementById('registration-event-id');
   const eventTitleEl = document.getElementById('event-details-title');
-  const eventDateEl = document.getElementById('event-details-date');
-  const eventTimeEl = document.getElementById('event-details-time');
+  const eventSchedulesEl = document.getElementById('event-details-schedules');
   const eventLocationEl = document.getElementById('event-details-location');
-  const eventSpeakerEl = document.getElementById('event-details-speaker');
   const eventDescriptionEl = document.getElementById('event-details-description');
   const eventPriceEl = document.getElementById('event-details-price');
+  const eventPixEl = document.getElementById('event-details-pix');
+  const eventPixSectionEl = document.getElementById('event-pix-section');
+  const eventPaymentTitleEl = document.getElementById('event-payment-title');
+  const eventStartDateTimeSelectEl = document.getElementById('event-start-datetime-select');
+
+  let selectedDateTime = '';
+
+  function formatDateTimeOption(value) {
+    if (!value) return '-';
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return String(value);
+    }
+
+    return parsed.toLocaleString('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+  }
+
+  function formatCourseScheduleLabel(s) {
+    const start = parseDateTime(s?.start || '');
+    const end   = parseDateTime(s?.end   || '');
+    if (!start) return s?.start || '-';
+    const dateStr  = start.toLocaleDateString('pt-BR');
+    const startHr  = start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const endHr    = end ? end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null;
+    return endHr ? `${dateStr} - ${startHr} até ${endHr}` : `${dateStr} - ${startHr}`;
+  }
+
+  function setDateTimeOptions(eventItem) {
+    const courseSchedules = Array.isArray(eventItem?.course_schedules) ? eventItem.course_schedules : [];
+
+    // Populate <ul> with all course dates
+    if (eventSchedulesEl) {
+      if (courseSchedules.length === 0) {
+        eventSchedulesEl.innerHTML = '<li>Data da aula a confirmar</li>';
+      } else {
+        eventSchedulesEl.innerHTML = courseSchedules
+          .map((s) => `<li>${escapeHtml(formatCourseScheduleLabel(s))}</li>`)
+          .join('');
+      }
+    }
+
+    if (!eventStartDateTimeSelectEl) return;
+
+    eventStartDateTimeSelectEl.innerHTML = '';
+
+    if (!courseSchedules.length) {
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = 'Sem horários disponíveis';
+      eventStartDateTimeSelectEl.appendChild(emptyOption);
+      selectedDateTime = '';
+      return;
+    }
+
+    courseSchedules.forEach((s, index) => {
+      const optionEl = document.createElement('option');
+      optionEl.value = s?.start || String(index);
+      optionEl.textContent = formatCourseScheduleLabel(s);
+      if (index === 0) optionEl.selected = true;
+      eventStartDateTimeSelectEl.appendChild(optionEl);
+    });
+
+    selectedDateTime = courseSchedules[0]?.start || '';
+  }
+
+  if (eventStartDateTimeSelectEl) {
+    eventStartDateTimeSelectEl.addEventListener('change', (event) => {
+      selectedDateTime = event.target.value;
+    });
+  }
 
   const eventIdFromQuery = new URLSearchParams(window.location.search).get('event_id');
 
@@ -110,16 +240,25 @@ function initEventRegistrationForm() {
         }
 
         if (eventTitleEl) eventTitleEl.textContent = `Inscrição: ${eventItem.title}`;
-        if (eventDateEl) eventDateEl.textContent = (eventItem.start_date && eventItem.end_date)
-          ? `${new Date(eventItem.start_date).toLocaleDateString('pt-BR')} — ${new Date(eventItem.end_date).toLocaleDateString('pt-BR')}`
-          : (eventItem.start_date ? new Date(eventItem.start_date).toLocaleDateString('pt-BR') : '-');
-        if (eventTimeEl) eventTimeEl.textContent = (eventItem.start_date && eventItem.end_date)
-          ? `${new Date(eventItem.start_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} — ${new Date(eventItem.end_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
-          : (eventItem.start_date ? new Date(eventItem.start_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-');
         if (eventLocationEl) eventLocationEl.textContent = eventItem.location || '-';
-        if (eventSpeakerEl) eventSpeakerEl.textContent = eventItem.category || '-';
         if (eventDescriptionEl) eventDescriptionEl.textContent = eventItem.description || '-';
-        if (eventPriceEl) eventPriceEl.textContent = eventItem.price != null ? formatPrice(eventItem.price) : 'Gratuito';
+        const priceNum = Number(String(eventItem?.price || '0').replace(',', '.'));
+        const formattedPrice = priceNum > 0
+          ? priceNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          : 'Gratuito';
+        if (eventPriceEl) eventPriceEl.textContent = formattedPrice;
+
+        if (eventItem?.pix_key) {
+          if (eventPixEl) eventPixEl.textContent = eventItem.pix_key;
+
+          if (eventPixSectionEl) eventPixSectionEl.classList.remove('hidden');
+          if (eventPaymentTitleEl) eventPaymentTitleEl.classList.remove('hidden');
+        } else {
+          if (eventPixSectionEl) eventPixSectionEl.classList.add('hidden');
+          if (eventPaymentTitleEl) eventPaymentTitleEl.classList.add('hidden');
+        }
+
+        setDateTimeOptions(eventItem);
         if (eventIdInput) eventIdInput.value = eventItem.id;
       })
       .catch((err) => {
@@ -289,7 +428,7 @@ function canonicalCategory(norm) {
 function renderMenu(menuItems) {
   const menu = document.getElementById('main-menu');
 
-  if (!menu || !Array.isArray(menuItems)) {
+  if (!menu || !Array.isArray(menuItems) || menuItems.length === 0) {
     return;
   }
 
@@ -313,7 +452,9 @@ function renderMenu(menuItems) {
   const homeHrefPrefix = page === 'products' ? '../index.html#' : '#';
   const productsHref = page === 'products' ? 'produtos.html' : 'pages/produtos.html';
 
-  menu.innerHTML = menuItems.map((item) => {
+  menu.innerHTML = menuItems
+    .filter((item) => item.slug !== 'loja')
+    .map((item) => {
     const isStore = item.slug === 'loja';
     const href = isStore ? productsHref : `${homeHrefPrefix}${item.slug}`;
     const activeClass = (page === 'products' && isStore) ? 'text-pink-700' : 'hover:text-pink-700 transition-colors';
@@ -328,7 +469,7 @@ function renderFooter(site, menuItems, services, settings) {
   const managementName = document.getElementById('management-name');
   const copyrightText = document.getElementById('copyright-text');
 
-  if (quickLinks && Array.isArray(menuItems)) {
+  if (quickLinks && Array.isArray(menuItems) && menuItems.length > 0) {
     const footerItems = menuItems.filter((item) => item.slug !== 'loja').slice(0, 5);
     const hrefPrefix = page === 'products' ? '../index.html#' : '#';
 
@@ -337,7 +478,7 @@ function renderFooter(site, menuItems, services, settings) {
     )).join('');
   }
 
-  if (servicesList && Array.isArray(services)) {
+  if (servicesList && Array.isArray(services) && services.length > 0) {
     servicesList.innerHTML = services.slice(0, 4)
       .map((service) => `<li>${escapeHtml(service.title)}</li>`)
       .join('');
@@ -455,7 +596,7 @@ function renderHomeContent(payload) {
     }
   }
 
-  if (teamGrid && Array.isArray(payload.team)) {
+  if (teamGrid && Array.isArray(payload.team) && payload.team.length > 0) {
     teamGrid.innerHTML = payload.team.map((member) => `
       <article class="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 text-center">
         ${member.photo_url
@@ -467,7 +608,7 @@ function renderHomeContent(payload) {
     `).join('');
   }
 
-  if (servicesGrid && Array.isArray(payload.services)) {
+  if (servicesGrid && Array.isArray(payload.services) && payload.services.length > 0) {
     servicesGrid.innerHTML = payload.services.map((service) => `
       <article class="rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-6">
         <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-red-800 text-xl"><i class="fa-solid fa-briefcase"></i></span>
@@ -478,7 +619,7 @@ function renderHomeContent(payload) {
     `).join('');
   }
 
-  if (pillarsGrid && Array.isArray(payload.pillars)) {
+  if (pillarsGrid && Array.isArray(payload.pillars) && payload.pillars.length > 0) {
     pillarsGrid.innerHTML = payload.pillars.map((pillar) => `
       <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-7 text-center">
         <span class="inline-flex h-16 w-16 items-center justify-center rounded-xl bg-red-50 text-red-800 text-3xl">
@@ -490,7 +631,7 @@ function renderHomeContent(payload) {
     `).join('');
   }
 
-  if (projectsGrid && Array.isArray(payload.projects)) {
+  if (projectsGrid && Array.isArray(payload.projects) && payload.projects.length > 0) {
     projectsGrid.innerHTML = payload.projects.map((project) => {
       const techList = String(project.technologies || '')
         .split(',')
@@ -518,7 +659,7 @@ function renderHomeContent(payload) {
     }).join('');
   }
 
-  if (editalsGrid && Array.isArray(payload.editals)) {
+  if (editalsGrid && Array.isArray(payload.editals) && payload.editals.length > 0) {
     editalsGrid.innerHTML = payload.editals.map((edital) => `
       <article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
         <div class="flex items-center justify-between">
@@ -551,7 +692,7 @@ async function loadPublicEvents() {
     
     // use fetchJson for consistent error handling but log URL for debugging
     const payload = await fetchJson('/events');
-    const events = Array.isArray(payload) ? payload : (payload.events || []);
+    const events = Array.isArray(payload) ? payload : (payload?.events || []);
 
     if (!events.length) {
       grid.innerHTML = `<article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6"><h3 class="mt-2 text-xl font-bold">Nenhum evento disponível</h3><p class="mt-2 text-slate-500">Ainda não há eventos públicos cadastrados. Volte em breve.</p></article>`;
@@ -559,40 +700,78 @@ async function loadPublicEvents() {
     }
 
     grid.innerHTML = events.map((ev) => {
-      const start = ev.start_date ? parseDateTime(ev.start_date) : null;
-      const end = ev.end_date ? parseDateTime(ev.end_date) : null;
-      const dateRange = start && end ? `${start.toLocaleDateString('pt-BR')} — ${end.toLocaleDateString('pt-BR')}` : (start ? start.toLocaleDateString('pt-BR') : end ? end.toLocaleDateString('pt-BR') : '');
-      const price = Number(ev.price || 0);
-      const timing = getEventTimingState(ev);
+      try {
+        // --- Datas do cronograma do curso (course_schedules) ---
+        const courseSchedules = Array.isArray(ev?.course_schedules) ? ev.course_schedules : [];
+        const primeiraAula = courseSchedules.length > 0 ? courseSchedules[0] : null;
 
-      let actionEl = '';
-      if (timing.isEnded) {
-        actionEl = `<span class="rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-rose-600">Encerrado</span>`;
-      } else if (timing.isUpcoming) {
-        actionEl = `<span class="rounded-xl bg-yellow-50 px-3 py-1 text-xs font-semibold text-amber-700">Inscrições abrem em ${start ? start.toLocaleString('pt-BR') : 'em breve'}</span>`;
-      } else if (timing.isOngoing) {
-        // link to registration page with selected event
-        const encodedTitle = encodeURIComponent(ev.title || 'Evento');
-        actionEl = `<a href="pages/inscricao.html?event_id=${encodeURIComponent(ev.id)}&event_title=${encodedTitle}" class="inline-flex items-center gap-2 text-red-800 font-semibold">Increvaci <i class="fa-solid fa-arrow-right"></i></a>`;
-      } else {
-        actionEl = `<span class="rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Verifique datas do evento</span>`;
+        let courseLabel = 'Data da aula a definir';
+        if (primeiraAula) {
+          const aulaStart = parseDateTime(primeiraAula?.start || '');
+          const aulaEnd   = parseDateTime(primeiraAula?.end   || '');
+          if (aulaStart) {
+            const dateStr = aulaStart.toLocaleDateString('pt-BR');
+            const startHr = aulaStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const endHr   = aulaEnd
+              ? aulaEnd.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+              : null;
+            courseLabel = endHr ? `${dateStr} - ${startHr} até ${endHr}` : `${dateStr} - ${startHr}`;
+          }
+        }
+        const extraDaysCount = courseSchedules.length > 1 ? courseSchedules.length - 1 : 0;
+
+        // --- Período de inscrições (usado apenas para o botão de ação) ---
+        const parsedPrice = Number(String(ev?.price ?? '0').replace(',', '.'));
+        const formattedPrice = (ev?.price && parsedPrice > 0)
+          ? parsedPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          : 'Gratuito';
+        const timing = getEventTimingState(ev || {});
+        const inscStart = timing.start;
+
+        let actionEl = '';
+        if (timing.isEnded) {
+          actionEl = `<span class="rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-rose-600">Encerrado</span>`;
+        } else if (timing.isUpcoming) {
+          actionEl = `<span class="rounded-xl bg-yellow-50 px-3 py-1 text-xs font-semibold text-amber-700">Inscrições abrem em ${inscStart ? inscStart.toLocaleString('pt-BR') : 'em breve'}</span>`;
+        } else if (timing.isOngoing) {
+          const encodedTitle = encodeURIComponent(ev?.title || 'Evento');
+          actionEl = `<a href="pages/inscricao.html?event_id=${encodeURIComponent(ev?.id || '')}&event_title=${encodedTitle}" class="inline-flex items-center gap-2 text-red-800 font-semibold">Inscrever-se <i class="fa-solid fa-arrow-right"></i></a>`;
+        } else {
+          actionEl = `<span class="rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Verifique datas do evento</span>`;
+        }
+
+        return `
+          <article class="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-full p-6">
+            <h3 class="text-xl font-bold text-slate-900">${escapeHtml(ev?.title || 'Evento')}</h3>
+            <p class="mt-2 text-slate-600 text-sm leading-relaxed">${escapeHtml((ev?.description || '').slice(0, 160))}</p>
+
+            <div class="mt-4 space-y-2 text-sm text-slate-700">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-location-dot text-red-800"></i>
+                <span>${escapeHtml(ev?.location || 'Local a confirmar')}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <i class="fa-regular fa-calendar-days text-red-800"></i>
+                <span class="font-medium text-gray-700">${escapeHtml(courseLabel)}</span>
+              </div>
+            </div>
+
+            ${extraDaysCount > 0
+              ? `<span class="mt-2 inline-flex w-fit text-xs text-red-800 font-bold bg-red-50 px-2 rounded">+ ${extraDaysCount} dias de curso</span>`
+              : ''}
+
+            <div class="flex justify-between items-center mt-auto pt-4 border-t border-slate-200">
+              <div class="text-sm font-semibold text-red-800">${formattedPrice}</div>
+              <div>
+                ${actionEl}
+              </div>
+            </div>
+          </article>
+        `;
+      } catch (renderError) {
+        console.error('erro ao renderizar card de evento', renderError, ev);
+        return '';
       }
-
-      return `
-        <article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
-          <h3 class="mt-2 text-xl font-bold">${escapeHtml(ev.title)}</h3>
-          <p class="mt-2 text-slate-500 text-sm">${escapeHtml((ev.description || '').slice(0, 160))}</p>
-          <div class="mt-4 text-sm text-slate-600 flex items-center justify-between">
-            <div>${escapeHtml(ev.location || '')}</div>
-            <div>${escapeHtml(dateRange)}</div>
-          </div>
-          <p class="mt-2 text-xs text-slate-500">Início: ${start ? start.toLocaleString('pt-BR') : 'Não informado'} · Fim: ${end ? end.toLocaleString('pt-BR') : 'Não informado'}</p>
-          <div class="mt-4 flex items-center justify-between">
-            <div class="text-sm font-semibold text-red-800">${formatPrice(price)}</div>
-            ${actionEl}
-          </div>
-        </article>
-      `;
     }).join('');
   } catch (err) {
     console.error('failed to load public events', err);

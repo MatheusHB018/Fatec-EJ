@@ -5,25 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class TeamMember extends Model
+class SiteSection extends Model
 {
     use HasFactory;
 
-    protected $table = 'team_members';
-
     protected $fillable = [
-        'name',
-        'role',
-        'image',
-        'initials',
-        'photo_url',
-        'display_order',
+        'section_name',
+        'content',
         'is_active',
+        'slug',
+        'title',
+        'subtitle',
     ];
 
     protected $casts = [
-        'image' => 'string',
-        'display_order' => 'integer',
+        'content' => 'array',
         'is_active' => 'boolean',
     ];
 }

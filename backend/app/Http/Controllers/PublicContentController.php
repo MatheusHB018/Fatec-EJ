@@ -5,48 +5,56 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PublicContentController extends Controller
 {
     public function index(): JsonResponse
     {
-        $sections = DB::table('site_sections')
-            ->where('is_active', true)
-            ->get()
-            ->keyBy('slug');
+        $sections = $this->getActiveOrdered('site_sections')->keyBy('slug');
 
         $content = [
-            'menu' => DB::table('menu_items')
-                ->where('is_active', true)
-                ->orderBy('position')
-                ->get(),
-            'site' => DB::table('site_settings')->first(),
+            'menu' => $this->getActiveOrdered('menu_items', 'position'),
+            'site' => $this->getFirst('site_settings'),
             'settings' => Setting::current(),
             'sections' => $sections,
-            'team' => DB::table('team_members')
-                ->where('is_active', true)
-                ->orderBy('display_order')
-                ->get(),
-            'services' => DB::table('services')
-                ->where('is_active', true)
-                ->orderBy('display_order')
-                ->get(),
-            'pillars' => DB::table('pillars')
-                ->where('is_active', true)
-                ->orderBy('display_order')
-                ->get(),
-            'projects' => DB::table('projects')
-                ->where('is_active', true)
-                ->orderBy('display_order')
-                ->get(),
-            'editals' => DB::table('editals')
-                ->where('is_active', true)
-                ->orderBy('display_order')
-                ->get(),
+            'team' => $this->getActiveOrdered('team_members', 'display_order'),
+            'services' => $this->getActiveOrdered('services', 'display_order'),
+            'pillars' => $this->getActiveOrdered('pillars', 'display_order'),
+            'projects' => $this->getActiveOrdered('projects', 'display_order'),
+            'editals' => $this->getActiveOrdered('editals', 'display_order'),
             'about' => $this->mapAboutPayload($sections->get('sobre')),
         ];
 
         return response()->json($content);
+    }
+
+    private function getFirst(string $table): ?object
+    {
+        if (! Schema::hasTable($table)) {
+            return null;
+        }
+
+        return DB::table($table)->first();
+    }
+
+    private function getActiveOrdered(string $table, string $orderBy = 'id')
+    {
+        if (! Schema::hasTable($table)) {
+            return collect();
+        }
+
+        $query = DB::table($table);
+
+        if (Schema::hasColumn($table, 'is_active')) {
+            $query->where('is_active', true);
+        }
+
+        if (Schema::hasColumn($table, $orderBy)) {
+            $query->orderBy($orderBy);
+        }
+
+        return $query->get();
     }
 
     private function mapAboutPayload(?object $section): array

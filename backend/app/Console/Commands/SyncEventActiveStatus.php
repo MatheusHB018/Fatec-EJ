@@ -27,16 +27,13 @@ class SyncEventActiveStatus extends Command
     {
         $now = Carbon::now();
 
-        // Ativa eventos cujo período engloba o momento atual
-        $activated = Event::where('start_date', '<=', $now)
-            ->where('end_date', '>=', $now)
+        // Ativa eventos que ainda não terminaram (engloba futuros e em andamento)
+        $activated = Event::where('end_date', '>=', $now)
             ->update(['is_active' => true]);
 
-        // Desativa eventos cujo end_date já passou ou que ainda não iniciaram
-        $deactivated = Event::where(function ($q) use ($now) {
-                $q->where('end_date', '<', $now)
-                  ->orWhere('start_date', '>', $now);
-            })->update(['is_active' => false]);
+        // Desativa apenas eventos cujo end_date já passou definitivamente
+        $deactivated = Event::where('end_date', '<', $now)
+            ->update(['is_active' => false]);
 
         $this->info("Eventos ativados: {$activated}; Eventos desativados: {$deactivated}");
 

@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\RegistrationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,7 +35,7 @@ Route::get('/products/{product}', [ProductController::class, 'publicShow']);
 Route::get('/events', [EventController::class, 'publicIndex']);
 
 // Inscrição em evento/cursos (formulário público)
-Route::post('/event-registrations', [\App\Http\Controllers\PublicEventRegistrationController::class, 'store']);
+Route::post('/event-registrations', [RegistrationController::class, 'store']);
 
 // Configurações públicas (nome da gestão, hero, sobre)
 Route::get('/settings', [SettingController::class, 'publicShow']);
@@ -45,9 +46,17 @@ Route::get('/content', [PublicContentController::class, 'index']);
 // Envio do formulário de contato
 Route::post('/contacts', [ContactController::class, 'store']);
 
+// Recuperação de senha
+Route::post('/forgot-password', [App\Http\Controllers\Api\PasswordResetController::class, 'sendResetLink']);
+Route::post('/reset-password', [App\Http\Controllers\Api\PasswordResetController::class, 'resetPassword']);
+
 // Autenticação do painel admin
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::middleware('api.token')->group(function () {
+Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:api')->group(function () {
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // aliases temporários para compatibilidade com clientes antigos
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 });
@@ -57,7 +66,7 @@ Route::middleware('api.token')->group(function () {
 | Rotas administrativas (API)
 |--------------------------------------------------------------------------
 */
-Route::prefix('admin')->middleware('api.token')->group(function () {
+Route::prefix('admin')->middleware('auth:api')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index']);
     Route::get('about', [AboutController::class, 'show']);
     Route::put('about', [AboutController::class, 'update']);
@@ -70,6 +79,9 @@ Route::prefix('admin')->middleware('api.token')->group(function () {
 
     Route::apiResource('products', ProductController::class)->except(['create', 'edit']);
     Route::apiResource('events', EventController::class)->except(['create', 'edit', 'show']);
+    Route::get('events/{id}/registrations', [RegistrationController::class, 'eventRegistrations']);
+    Route::put('registrations/{registration}', [RegistrationController::class, 'update']);
+    Route::delete('registrations/{registration}', [RegistrationController::class, 'destroy']);
     Route::get('inscritos', [InscritoController::class, 'index']);
     Route::delete('inscritos/{inscrito}', [InscritoController::class, 'destroy']);
 

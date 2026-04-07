@@ -13,9 +13,15 @@
 </head>
 <body class="h-screen overflow-hidden bg-slate-50 font-[Inter] text-slate-800 antialiased" data-page="admin-dashboard">
   <div class="flex h-screen overflow-hidden bg-slate-50">
-  <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col min-h-0">
+  <div id="admin-sidebar-backdrop" class="fixed inset-0 z-40 hidden bg-black/40 md:hidden"></div>
+  <aside id="admin-sidebar" class="-translate-x-full md:translate-x-0 fixed md:relative left-0 top-0 z-50 flex h-screen md:h-auto w-72 md:w-64 shrink-0 flex-col border-r border-gray-200 bg-white min-h-0 transition-transform duration-300">
       <div class="px-6 py-6">
-        <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo Empresa Júnior FATEC" class="h-14 w-auto object-contain" />
+        <div class="flex items-start justify-between gap-3">
+          <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo Empresa Júnior FATEC" class="h-14 w-auto object-contain" />
+          <button id="admin-mobile-menu-close" type="button" class="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-slate-600 hover:border-red-800 hover:text-red-800">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
         <h1 class="mt-4 text-3xl font-extrabold tracking-tight">
           <span class="text-slate-900"> Admin</span>
         </h1>
@@ -68,7 +74,7 @@
           <i class="fa-regular fa-user w-5 text-center"></i>
           Usuários
         </button>
-        <button type="button" data-section-target="loja" class="admin-menu-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+        <button type="button" data-section-target="loja" class="admin-menu-item hidden w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
           <i class="fa-solid fa-bag-shopping w-5 text-center"></i>
           Loja
         </button>
@@ -79,6 +85,10 @@
       </nav>
 
       <div class="mt-auto border-t border-gray-200 p-4">
+        <button data-logout-button type="button" class="mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-slate-500 transition hover:bg-slate-50 hover:text-red-800 md:hidden">
+          <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
+          Sair
+        </button>
         <a href="../index.html" class="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-500 transition hover:bg-slate-50 hover:text-red-800">
           <i class="fa-solid fa-arrow-left w-5 text-center"></i>
           Voltar ao site
@@ -88,12 +98,21 @@
     </aside>
 
     <div class="flex min-w-0 flex-1 flex-col">
-      <header class="border-b border-gray-200 bg-white">
+      <header class="md:hidden border-b border-gray-200 bg-white">
+        <div class="flex h-16 items-center justify-between px-4">
+          <div class="flex items-center gap-3">
+            <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo Empresa Júnior FATEC" class="h-10 w-auto object-contain" />
+            <p class="text-sm font-semibold text-slate-700">Painel Admin</p>
+          </div>
+          <button id="admin-mobile-menu-toggle" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-slate-600">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+        </div>
+      </header>
+
+      <header class="hidden md:block border-b border-gray-200 bg-white">
         <div class="flex h-20 items-center justify-between px-6 lg:px-8">
           <div class="flex items-center gap-4">
-            <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-slate-600 lg:hidden">
-              <i class="fa-solid fa-bars"></i>
-            </button>
             <div class="hidden h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-slate-600 lg:inline-flex">
               <i class="fa-regular fa-window-maximize"></i>
             </div>
@@ -108,14 +127,14 @@
                 <p id="admin-user-email" class="text-xs text-slate-500">Equipe EJ FATEC</p>
               </div>
             </div>
-            <button id="logout-button" type="button" class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800"><!-- login.html está na mesma pasta admin/ -->
+            <button id="logout-button" data-logout-button type="button" class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-red-800 hover:text-red-800"><!-- login.html está na mesma pasta admin/ -->
               Sair
             </button>
           </div>
         </div>
       </header>
 
-      <main class="flex-1 overflow-y-auto p-8">
+      <main class="flex-1 overflow-y-auto p-4 md:p-8">
         <div class="mx-auto max-w-5xl">
           <section data-admin-section="dashboard" class="admin-section space-y-8">
             <div>
@@ -124,9 +143,9 @@
             </div>
       
             <!-- Modal de Inscrição -->
-            <div id="entry-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div id="entry-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 md:p-4">
               <div class="absolute inset-0 bg-black/50" id="entry-modal-overlay"></div>
-              <div class="relative z-60 w-full max-w-2xl rounded-lg bg-white shadow-lg">
+              <div class="relative z-60 w-[95%] md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-lg">
                 <div class="flex items-center justify-between rounded-t-md bg-indigo-100 px-6 py-4">
                   <h3 class="text-lg font-semibold text-slate-900">Entrada</h3>
                   <button id="entry-modal-close" class="text-slate-600 hover:text-slate-900">×</button>
@@ -211,7 +230,7 @@
 
             
 
-            <div id="dashboard-metrics" class="grid gap-5 md:grid-cols-2 xl:grid-cols-4"></div>
+            <div id="dashboard-metrics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
 
             <div class="grid gap-6 xl:grid-cols-2">
               <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -469,16 +488,41 @@
                   <textarea id="event-description" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100"></textarea>
                 </div>
 
-                <div class="grid gap-5 md:grid-cols-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label for="event-start" class="mb-2 block text-sm font-semibold text-slate-700">Início</label>
-                    <input id="event-start" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                    <label for="event-start" class="text-sm font-medium text-slate-700">Início das Inscrições</label>
+                    <input id="event-start" name="start_date" type="datetime-local" class="block w-full border-2 border-red-800 rounded-md p-2 focus:ring-red-900" required />
                   </div>
 
                   <div>
-                    <label for="event-end" class="mb-2 block text-sm font-semibold text-slate-700">Fim</label>
-                    <input id="event-end" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-slate-800 outline-none transition focus:border-red-800 focus:ring-2 focus:ring-red-100" required />
+                    <label for="event-end" class="text-sm font-medium text-slate-700">Fim das Inscrições</label>
+                    <input id="event-end" name="end_date" type="datetime-local" class="block w-full border-2 border-red-800 rounded-md p-2 focus:ring-red-900" required />
                   </div>
+                </div>
+
+                <div class="mt-4">
+                  <label class="text-sm font-medium text-slate-700">Datas e Horários do Curso (Na FATEC)</label>
+
+                  <div id="datas-wrapper" class="mt-2 space-y-3">
+                    <div class="data-group grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="text-sm font-medium text-slate-700">Início da Aula</label>
+                        <input name="course_start_dates[]" type="datetime-local" class="block w-full border-2 border-red-800 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-900 bg-white mt-1" />
+                      </div>
+
+                      <div>
+                        <label class="text-sm font-medium text-slate-700">Fim da Aula</label>
+                        <div class="flex items-end gap-2">
+                          <input name="course_end_dates[]" type="datetime-local" class="block w-full border-2 border-red-800 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-900 bg-white mt-1" />
+                          <button type="button" data-remove-course-date class="mb-1 hidden rounded-md border border-red-200 px-3 py-2 text-red-700 transition hover:bg-red-50" aria-label="Remover data de aula">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="button" id="btn-add-data" class="mt-2 text-sm text-red-800 font-bold hover:underline">+ Adicionar data/horário que irá começar o curso</button>
                 </div>
 
                 <div class="grid gap-5 md:grid-cols-2 mt-3">
@@ -530,9 +574,86 @@
               <div id="events-list" class="mt-6"></div>
             </div>
 
-            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 class="text-xl font-bold text-slate-900">Inscritos</h2>
-              <div id="inscritos-list" class="mt-6"></div>
+            <div id="registrations-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+              <div class="w-[95%] md:max-w-2xl lg:max-w-6xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-4 md:p-6 shadow-xl">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Inscritos do Evento</h3>
+                    <p id="registrations-modal-subtitle" class="mt-1 text-sm text-slate-500"></p>
+                  </div>
+                  <button id="registrations-modal-close" type="button" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:border-red-800 hover:text-red-800">Fechar</button>
+                </div>
+
+                <div class="mt-4 w-full overflow-x-auto bg-white rounded-lg shadow">
+                  <table class="min-w-full border-collapse text-sm">
+                    <thead>
+                      <tr class="border-b border-gray-200 text-left text-slate-600">
+                        <th class="px-3 py-2">Nome</th>
+                        <th class="px-3 py-2">E-mail</th>
+                        <th class="px-3 py-2">WhatsApp</th>
+                        <th class="px-3 py-2">Instituição</th>
+                        <th class="px-3 py-2">Observações</th>
+                        <th class="px-3 py-2">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="registrations-table-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div id="registration-edit-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 p-4">
+              <div class="w-[95%] md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-4 md:p-6 shadow-xl">
+                <div class="flex items-start justify-between gap-4">
+                  <h3 class="text-xl font-bold text-slate-900">Editar Inscrito</h3>
+                  <button id="registration-edit-close" type="button" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:border-red-800 hover:text-red-800">Fechar</button>
+                </div>
+
+                <form id="registration-edit-form" class="mt-5 space-y-4">
+                  <input id="registration-edit-id" type="hidden" />
+                  <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label for="registration-edit-name" class="mb-1 block text-sm font-semibold text-slate-700">Nome</label>
+                      <input id="registration-edit-name" type="text" class="w-full rounded-md border border-gray-200 px-3 py-2" required />
+                    </div>
+                    <div>
+                      <label for="registration-edit-email" class="mb-1 block text-sm font-semibold text-slate-700">E-mail</label>
+                      <input id="registration-edit-email" type="email" class="w-full rounded-md border border-gray-200 px-3 py-2" required />
+                    </div>
+                  </div>
+
+                  <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label for="registration-edit-whatsapp" class="mb-1 block text-sm font-semibold text-slate-700">WhatsApp</label>
+                      <input id="registration-edit-whatsapp" type="text" class="w-full rounded-md border border-gray-200 px-3 py-2" required />
+                    </div>
+                    <div>
+                      <label for="registration-edit-cpf" class="mb-1 block text-sm font-semibold text-slate-700">CPF</label>
+                      <input id="registration-edit-cpf" type="text" class="w-full rounded-md border border-gray-200 px-3 py-2" required />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="registration-edit-institution" class="mb-1 block text-sm font-semibold text-slate-700">Instituição</label>
+                    <input id="registration-edit-institution" type="text" class="w-full rounded-md border border-gray-200 px-3 py-2" />
+                  </div>
+
+                  <div>
+                    <label for="registration-edit-notes" class="mb-1 block text-sm font-semibold text-slate-700">Observações</label>
+                    <textarea id="registration-edit-notes" rows="3" class="w-full rounded-md border border-gray-200 px-3 py-2"></textarea>
+                  </div>
+
+                  <p id="registration-edit-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium"></p>
+
+                  <div class="flex flex-wrap gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-900">
+                      <i class="fa-solid fa-check"></i>
+                      Salvar Alterações
+                    </button>
+                    <button id="registration-edit-cancel" type="button" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-red-800 hover:text-red-800">Cancelar</button>
+                  </div>
+                </form>
+              </div>
             </div>
           </section>
 

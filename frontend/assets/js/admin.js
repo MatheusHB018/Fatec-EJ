@@ -1,3 +1,13 @@
+function escapeHtml(text) {
+  if (text === null || text === undefined) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function getProjectRoot() {
   if (window.location.protocol === 'file:') {
     // quando aberto via file://, usar localhost como fallback
@@ -20,7 +30,7 @@ function getProjectRoot() {
 }
 
 const ADMIN_API_BASE = `${getProjectRoot()}/backend/public/api`;
-const ADMIN_TOKEN_KEY = 'ej_admin_token';
+const ADMIN_TOKEN_KEY = 'jwt_token';
 const ADMIN_USER_KEY = 'ej_admin_user';
 const adminPage = document.body.dataset.page;
 let contactsChart;
@@ -32,6 +42,12 @@ let editals = [];
 let contactMessages = [];
 let users = [];
 let inscritos = [];
+let registrations = [];
+let selectedEventForRegistrations = null;
+
+if (adminPage === 'admin-dashboard' && !localStorage.getItem(ADMIN_TOKEN_KEY)) {
+  window.location.href = 'login.html';
+}
 
 // Resolve media URLs returned by the API to a URL reachable from the frontend/admin pages.
 function resolveMediaUrlAdmin(url) {
@@ -339,17 +355,29 @@ function fillProjectForm(project) {
 }
 
 async function reloadProjects() {
-  projects = await adminFetch('/admin/projects');
-  renderProjectManagerList();
+  try {
+    projects = await adminFetch('/admin/projects');
+    renderProjectManagerList();
+  } catch (err) {
+    console.error('Erro ao carregar projetos', err);
+    projects = [];
+    renderProjectManagerList();
+  }
 }
 
 /* -----------------------
    Product manager
    ----------------------- */
 async function reloadProducts() {
-  const data = await adminFetch('/admin/products');
-  // apiResource returns paginated object in admin index; normalize to items array
-  products = Array.isArray(data) ? data : (data.data || data.items || []);
+  try {
+    const data = await adminFetch('/admin/products');
+    // apiResource returns paginated object in admin index; normalize to items array
+    products = Array.isArray(data) ? data : (data.data || data.items || []);
+  } catch (err) {
+    console.error('Erro ao carregar produtos', err);
+    products = [];
+  }
+
   renderProductsList();
   renderRecentProducts(products.slice(0, 4));
   // render quick manager on dashboard
@@ -922,7 +950,12 @@ function fillEditalForm(edital) {
 }
 
 async function reloadEditals() {
-  editals = await adminFetch('/admin/editals');
+  try {
+    editals = await adminFetch('/admin/editals');
+  } catch (err) {
+    console.error('Erro ao carregar editais', err);
+    editals = [];
+  }
   renderEditalManagerList();
 }
 
@@ -998,14 +1031,24 @@ function fillUserForm(user) {
 }
 
 async function reloadUsers() {
-  const usersPayload = await adminFetch('/admin/users');
-  users = Array.isArray(usersPayload) ? usersPayload : (usersPayload.data || []);
+  try {
+    const usersPayload = await adminFetch('/admin/users');
+    users = Array.isArray(usersPayload) ? usersPayload : (usersPayload.data || []);
+  } catch (err) {
+    console.error('Erro ao carregar usuários', err);
+    users = [];
+  }
   renderUsersList();
 }
 
 async function reloadContactMessages() {
-  const contactsPayload = await adminFetch('/admin/contacts');
-  contactMessages = contactsPayload.data || contactsPayload || [];
+  try {
+    const contactsPayload = await adminFetch('/admin/contacts');
+    contactMessages = contactsPayload.data || contactsPayload || [];
+  } catch (err) {
+    console.error('Erro ao carregar mensagens de contato', err);
+    contactMessages = [];
+  }
   renderContactMessagesList();
 }
 
@@ -1018,7 +1061,12 @@ function fillServiceForm(service) {
 }
 
 async function reloadServices() {
-  services = await adminFetch('/admin/services');
+  try {
+    services = await adminFetch('/admin/services');
+  } catch (err) {
+    console.error('Erro ao carregar serviços', err);
+    services = [];
+  }
   renderServiceManagerList();
 }
 
@@ -1033,13 +1081,26 @@ function fillTeamForm(member) {
 }
 
 async function reloadTeamMembers() {
-  teamMembers = await adminFetch('/admin/team-members');
+  try {
+    teamMembers = await adminFetch('/admin/team-members');
+  } catch (err) {
+    console.error('Erro ao carregar equipe', err);
+    teamMembers = [];
+  }
   renderTeamManagerList();
 }
 
 function renderDashboardCharts(chartData) {
+  if (!chartData || !Array.isArray(chartData.daily_contacts) || !chartData.product_breakdown) {
+    return;
+  }
+
   const contactsCtx = document.getElementById('contacts-chart');
   const productsCtx = document.getElementById('products-chart');
+
+  if (!contactsCtx || !productsCtx || typeof Chart === 'undefined') {
+    return;
+  }
 
   if (contactsChart) {
     contactsChart.destroy();
@@ -1096,10 +1157,11 @@ function renderDashboardCharts(chartData) {
 }
 
 function renderDashboardSections(data, contactsPayload, productsPayload) {
-  renderMetricCards(data.stats);
-  renderRecentContacts(data.recent.contacts || []);
-  renderRecentProducts(data.recent.products || []);
-  renderDashboardCharts(data.charts);
+  const safeData = data || {};
+  renderMetricCards(safeData.stats || {});
+  renderRecentContacts(safeData.recent?.contacts || []);
+  renderRecentProducts(safeData.recent?.products || []);
+  renderDashboardCharts(safeData.charts || null);
 
   renderCardsList('team-list', data.sections.team || [], (member) => `
     <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -1220,6 +1282,15 @@ async function adminFetch(endpoint, options = {}) {
   return payload;
 }
 
+async function safeAdminFetch(endpoint, options = {}, fallbackValue = null) {
+  try {
+    return await adminFetch(endpoint, options);
+  } catch (error) {
+    console.error(`Falha ao carregar ${endpoint}:`, error);
+    return fallbackValue;
+  }
+}
+
 async function requireAuth() {
   const token = getToken();
 
@@ -1229,7 +1300,7 @@ async function requireAuth() {
   }
 
   try {
-    const payload = await adminFetch('/auth/me');
+    const payload = await adminFetch('/me');
 
     if (!payload || typeof payload !== 'object' || !payload.user) {
       // resposta inesperada: força logout local
@@ -1251,7 +1322,7 @@ async function initLoginPage() {
 
   if (existingToken) {
     try {
-      await adminFetch('/auth/me');
+      await adminFetch('/me');
       window.location.href = 'dashboard.html';
       return;
     } catch (error) {
@@ -1269,7 +1340,7 @@ async function initLoginPage() {
     submitButton.textContent = 'Entrando...';
 
     try {
-      const payload = await adminFetch('/auth/login', {
+      const payload = await adminFetch('/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1307,7 +1378,11 @@ async function initDashboardPage() {
 
   const userName = document.getElementById('admin-user-name');
   const userEmail = document.getElementById('admin-user-email');
-  const logoutButton = document.getElementById('logout-button');
+  const logoutButtons = document.querySelectorAll('[data-logout-button]');
+  const sidebar = document.getElementById('admin-sidebar');
+  const sidebarBackdrop = document.getElementById('admin-sidebar-backdrop');
+  const mobileMenuToggle = document.getElementById('admin-mobile-menu-toggle');
+  const mobileMenuClose = document.getElementById('admin-mobile-menu-close');
   const form = document.getElementById('admin-settings-form');
   const submitButton = form.querySelector('button[type="submit"]');
   const aboutForm = document.getElementById('about-form');
@@ -1337,10 +1412,58 @@ async function initDashboardPage() {
   const usersList = document.getElementById('users-list');
   let managementName = 'Gestão Pioneira 2026';
 
+  function isMobileViewport() {
+    return window.innerWidth < 768;
+  }
+
+  function openSidebarMobile() {
+    if (!sidebar) return;
+    sidebar.classList.remove('-translate-x-full');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('hidden');
+  }
+
+  function closeSidebarMobile() {
+    if (!sidebar || !isMobileViewport()) return;
+    sidebar.classList.add('-translate-x-full');
+    if (sidebarBackdrop) sidebarBackdrop.classList.add('hidden');
+  }
+
+  if (mobileMenuToggle) {
+    mobileMenuToggle.addEventListener('click', () => {
+      if (!sidebar) return;
+      const isHidden = sidebar.classList.contains('-translate-x-full');
+      if (isHidden) {
+        openSidebarMobile();
+      } else {
+        closeSidebarMobile();
+      }
+    });
+  }
+
+  if (mobileMenuClose) {
+    mobileMenuClose.addEventListener('click', () => closeSidebarMobile());
+  }
+
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', () => closeSidebarMobile());
+  }
+
+  window.addEventListener('resize', () => {
+    if (!sidebar || !sidebarBackdrop) return;
+    if (!isMobileViewport()) {
+      sidebar.classList.remove('-translate-x-full');
+      sidebarBackdrop.classList.add('hidden');
+    } else {
+      sidebar.classList.add('-translate-x-full');
+      sidebarBackdrop.classList.add('hidden');
+    }
+  });
+
     document.querySelectorAll('[data-section-target]').forEach((item) => {
     item.addEventListener('click', async () => {
       const target = item.dataset.sectionTarget;
       setActiveAdminSection(target);
+      closeSidebarMobile();
       // Quando abrir a seção Loja, garanta que os produtos sejam recarregados
       if (target === 'loja') {
         try {
@@ -1353,7 +1476,6 @@ async function initDashboardPage() {
       if (target === 'eventos') {
         try {
           await reloadEvents();
-          await reloadInscritos();
         } catch (err) {
           setStatus('dashboard-status', 'Erro ao carregar eventos: ' + (err.message || err), 'error');
         }
@@ -1366,56 +1488,64 @@ async function initDashboardPage() {
   userName.textContent = user.name;
   userEmail.textContent = user.email;
 
-  try {
-    const [settings, dashboardData, contactsPayload, productsPayload, aboutPayload, contactSectionPayload, usersPayload] = await Promise.all([
-      adminFetch('/admin/settings'),
-      adminFetch('/admin/dashboard'),
-      adminFetch('/admin/contacts'),
-      adminFetch('/admin/products'),
-      adminFetch('/admin/about'),
-      adminFetch('/admin/contact-section'),
-      adminFetch('/admin/users'),
-    ]);
+  const [
+    settings,
+    dashboardData,
+    contactsPayload,
+    productsPayload,
+    aboutPayload,
+    contactSectionPayload,
+    usersPayload,
+  ] = await Promise.all([
+    safeAdminFetch('/admin/settings', {}, {}),
+    safeAdminFetch('/admin/dashboard', {}, { stats: {}, recent: {}, sections: {} }),
+    safeAdminFetch('/admin/contacts', {}, []),
+    safeAdminFetch('/admin/products', {}, []),
+    safeAdminFetch('/admin/about', {}, {}),
+    safeAdminFetch('/admin/contact-section', {}, {}),
+    safeAdminFetch('/admin/users', {}, []),
+  ]);
 
-    managementName = settings.management_name || managementName;
-    document.getElementById('hero-title').value = settings.hero_title || '';
-    document.getElementById('hero-subtitle').value = settings.hero_subtitle || '';
-    document.getElementById('sobre-ej').value = settings.about_text || '';
-    document.getElementById('contact-email').value = settings.contact_email || '';
-    document.getElementById('contact-phone').value = settings.contact_phone || '';
+  managementName = settings?.management_name || managementName;
+  document.getElementById('hero-title').value = settings?.hero_title || '';
+  document.getElementById('hero-subtitle').value = settings?.hero_subtitle || '';
+  document.getElementById('sobre-ej').value = settings?.about_text || '';
+  document.getElementById('contact-email').value = settings?.contact_email || '';
+  document.getElementById('contact-phone').value = settings?.contact_phone || '';
 
-    renderDashboardSections(dashboardData, contactsPayload, productsPayload);
-    teamMembers = dashboardData.sections.team || [];
-    renderTeamManagerList();
-    services = dashboardData.sections.services || [];
-    renderServiceManagerList();
-    projects = dashboardData.sections.projects || [];
-    renderProjectManagerList();
-    editals = dashboardData.sections.editals || [];
-    renderEditalManagerList();
-    contactMessages = contactsPayload.data || contactsPayload || [];
-    renderContactMessagesList();
-    users = Array.isArray(usersPayload) ? usersPayload : (usersPayload.data || []);
-    renderUsersList();
+  renderDashboardSections(
+    dashboardData || { stats: {}, recent: {}, sections: {} },
+    contactsPayload || [],
+    productsPayload || [],
+  );
+  teamMembers = dashboardData?.sections?.team || [];
+  renderTeamManagerList();
+  services = dashboardData?.sections?.services || [];
+  renderServiceManagerList();
+  projects = dashboardData?.sections?.projects || [];
+  renderProjectManagerList();
+  editals = dashboardData?.sections?.editals || [];
+  renderEditalManagerList();
+  contactMessages = (contactsPayload?.data || contactsPayload || []);
+  renderContactMessagesList();
+  users = Array.isArray(usersPayload) ? usersPayload : (usersPayload?.data || []);
+  renderUsersList();
 
-    document.getElementById('about-subtitle-input').value = aboutPayload.subtitle || '';
-    document.getElementById('about-title-input').value = aboutPayload.title || '';
-    document.getElementById('about-summary-input').value = aboutPayload.summary || '';
-    document.getElementById('about-mission-input').value = aboutPayload.mission || '';
-    document.getElementById('about-vision-input').value = aboutPayload.vision || '';
-    document.getElementById('about-values-input').value = (aboutPayload.values || []).join('\n');
-    document.getElementById('about-professor-input').value = aboutPayload.professor || '';
-    document.getElementById('about-mandate-input').value = aboutPayload.mandate || '';
-    document.getElementById('about-image-url-input').value = aboutPayload.image_url || '';
+  document.getElementById('about-subtitle-input').value = aboutPayload?.subtitle || '';
+  document.getElementById('about-title-input').value = aboutPayload?.title || '';
+  document.getElementById('about-summary-input').value = aboutPayload?.summary || '';
+  document.getElementById('about-mission-input').value = aboutPayload?.mission || '';
+  document.getElementById('about-vision-input').value = aboutPayload?.vision || '';
+  document.getElementById('about-values-input').value = (aboutPayload?.values || []).join('\n');
+  document.getElementById('about-professor-input').value = aboutPayload?.professor || '';
+  document.getElementById('about-mandate-input').value = aboutPayload?.mandate || '';
+  document.getElementById('about-image-url-input').value = aboutPayload?.image_url || '';
 
-    document.getElementById('contact-section-title').value = contactSectionPayload.title || '';
-    document.getElementById('contact-section-subtitle').value = contactSectionPayload.subtitle || '';
-    document.getElementById('contact-section-content').value = contactSectionPayload.content || '';
-    document.getElementById('contact-section-email').value = contactSectionPayload.contact_email || settings.contact_email || '';
-    document.getElementById('contact-section-phone').value = contactSectionPayload.contact_phone || settings.contact_phone || '';
-  } catch (error) {
-    setStatus('dashboard-status', error.message, 'error');
-  }
+  document.getElementById('contact-section-title').value = contactSectionPayload?.title || '';
+  document.getElementById('contact-section-subtitle').value = contactSectionPayload?.subtitle || '';
+  document.getElementById('contact-section-content').value = contactSectionPayload?.content || '';
+  document.getElementById('contact-section-email').value = contactSectionPayload?.contact_email || settings?.contact_email || '';
+  document.getElementById('contact-section-phone').value = contactSectionPayload?.contact_phone || settings?.contact_phone || '';
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -1999,15 +2129,17 @@ async function initDashboardPage() {
     }
   });
 
-  logoutButton.addEventListener('click', async () => {
-    try {
-      await adminFetch('/auth/logout', { method: 'POST' });
-    } catch (error) {
-      // Mesmo com falha no logout remoto, a sessão local deve ser encerrada.
-    }
+  logoutButtons.forEach((logoutButton) => {
+    logoutButton.addEventListener('click', async () => {
+      try {
+        await adminFetch('/logout', { method: 'POST' });
+      } catch (error) {
+        // Mesmo com falha no logout remoto, a sessão local deve ser encerrada.
+      }
 
-    clearSession();
-    window.location.href = 'login.html';
+      clearSession();
+      window.location.href = 'login.html';
+    });
   });
 }
 
@@ -2021,7 +2153,8 @@ async function reloadEvents() {
     renderEventsList();
   } catch (err) {
     console.error('Erro ao carregar eventos', err);
-    throw err;
+    events = [];
+    renderEventsList();
   }
 }
 
@@ -2062,11 +2195,13 @@ function renderEventsList() {
           <h3 class="font-semibold text-slate-900 mt-3">${ev.title}</h3>
           <p class="mt-1 text-sm text-slate-500">${ev.description || '-'}</p>
           <p class="mt-2 text-xs uppercase tracking-wide text-slate-400">${formatDate(ev.start_date)} → ${formatDate(ev.end_date)}</p>
+          <span class="mt-2 inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-800">Inscritos: ${ev.registrations_count || 0}</span>
           <p class="mt-1 text-xs uppercase tracking-wide ${ev.is_active ? 'text-emerald-600' : 'text-slate-400'}">${ev.is_active ? 'Ativo (flag)' : 'Inativo (flag)'}</p>
         </div>
         <div class="text-right">
           <p class="text-sm text-slate-500">${ev.location || '-'}</p>
           <div class="mt-3 flex flex-col gap-2">
+            <button data-event-action="registrations" data-event-id="${ev.id}" class="inline-flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-800 hover:bg-red-100"><i class="fa-solid fa-users"></i> Ver Inscritos</button>
             <button data-event-action="edit" data-event-id="${ev.id}" class="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"> <i class="fa-solid fa-pen-to-square"></i> Editar</button>
             <button data-event-action="delete" data-event-id="${ev.id}" class="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-slate-100"> <i class="fa-solid fa-trash"></i> Excluir</button>
           </div>
@@ -2077,51 +2212,132 @@ function renderEventsList() {
   }).join('');
 }
 
-function renderInscritosList() {
-  const container = document.getElementById('inscritos-list');
-  if (!container) return;
+function getReceiptUrl(receiptPath) {
+  if (!receiptPath) return null;
+  const path = String(receiptPath).trim();
+  if (!path) return null;
 
-  if (!inscritos || inscritos.length === 0) {
-    container.innerHTML = '<p class="text-sm text-slate-500">Nenhum inscrito encontrado.</p>';
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  const routeBase = `${getProjectRoot()}/backend/public/receipts/`;
+  const normalizedPath = path
+    .replace(/^https?:\/\/[^/]+\//, '')
+    .replace(/^backend\/public\/storage\//, '')
+    .replace(/^storage\//, '')
+    .replace(/^receipts\//, '')
+    .replace(/^\/+/, '');
+
+  return routeBase + encodeURIComponent(normalizedPath.split('/').pop());
+}
+
+function openRegistrationsModal(eventItem) {
+  selectedEventForRegistrations = eventItem;
+  const modal = document.getElementById('registrations-modal');
+  const subtitle = document.getElementById('registrations-modal-subtitle');
+  if (subtitle) {
+    subtitle.textContent = `Evento: ${eventItem?.title || '-'}`;
+  }
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeRegistrationsModal() {
+  const modal = document.getElementById('registrations-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function openRegistrationEditModal(registration) {
+  const modal = document.getElementById('registration-edit-modal');
+  if (!modal) return;
+
+  document.getElementById('registration-edit-id').value = registration.id;
+  document.getElementById('registration-edit-name').value = registration.name || '';
+  document.getElementById('registration-edit-email').value = registration.email || '';
+  document.getElementById('registration-edit-whatsapp').value = registration.whatsapp || '';
+  document.getElementById('registration-edit-cpf').value = registration.cpf || '';
+  document.getElementById('registration-edit-institution').value = registration.institution || '';
+  document.getElementById('registration-edit-notes').value = registration.notes || '';
+
+  const status = document.getElementById('registration-edit-status');
+  if (status) {
+    status.classList.add('hidden');
+    status.textContent = '';
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeRegistrationEditModal() {
+  const modal = document.getElementById('registration-edit-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function renderRegistrationsTable() {
+  const tbody = document.getElementById('registrations-table-body');
+  if (!tbody) return;
+
+  if (!registrations.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-sm text-slate-500">Nenhum inscrito encontrado para este evento.</td></tr>';
     return;
   }
 
-  container.innerHTML = inscritos.map((inscrito) => {
-    const eventName = inscrito.event ? inscrito.event.title : 'Evento removido';
+  tbody.innerHTML = registrations.map((r) => {
+    const receiptUrl = getReceiptUrl(r.receipt_path);
     return `
-    <article class="rounded-xl border border-gray-200 p-4 mb-3 bg-white">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <h3 class="font-semibold text-slate-900">${escapeHtml(inscrito.name)}</h3>
-          <p class="text-sm text-slate-500">${escapeHtml(inscrito.email)} • ${escapeHtml(inscrito.whatsapp)}</p>
-          <p class="text-xs text-slate-400">CPF: ${escapeHtml(inscrito.cpf)}</p>
-          <p class="text-xs text-slate-400">Evento: ${escapeHtml(eventName)}</p>
-          <p class="text-xs text-slate-400">Status: ${escapeHtml(inscrito.status)}</p>
-        </div>
-        <button type="button" data-inscrito-action="delete" data-inscrito-id="${inscrito.id}" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50">Excluir</button>
-      </div>
-    </article>
+      <tr class="border-b border-gray-100 align-top">
+        <td class="px-3 py-3 font-medium text-slate-800">${escapeHtml(r.name)}</td>
+        <td class="px-3 py-3 text-slate-600">${escapeHtml(r.email)}</td>
+        <td class="px-3 py-3 text-slate-600">${escapeHtml(r.whatsapp)}</td>
+        <td class="px-3 py-3 text-slate-600">${escapeHtml(r.institution || '-')}</td>
+        <td class="px-3 py-3 text-slate-600">${escapeHtml(r.notes || '-')}</td>
+        <td class="px-3 py-3">
+          <div class="flex flex-wrap gap-2">
+            ${receiptUrl
+              ? `<a href="${escapeHtml(receiptUrl)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline"><i class="fa-solid fa-file-invoice"></i> Ver Anexo</a>`
+              : `<span class="text-gray-400 text-sm"><i class="fa-solid fa-file-circle-xmark"></i> Não enviado</span>`}
+            <button type="button" data-registration-action="edit" data-registration-id="${r.id}" class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-red-800 hover:text-red-800">Editar</button>
+            <button type="button" data-registration-action="delete" data-registration-id="${r.id}" class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50">Excluir</button>
+          </div>
+        </td>
+      </tr>
     `;
   }).join('');
 }
 
-async function reloadInscritos() {
+async function loadRegistrationsByEvent(eventId) {
   try {
-    const payload = await adminFetch('/admin/inscritos');
-    inscritos = Array.isArray(payload) ? payload : (payload.data || payload || []);
-    renderInscritosList();
-  } catch (err) {
-    console.error('Erro ao carregar inscritos', err);
-    throw err;
+    const payload = await adminFetch(`/admin/events/${eventId}/registrations`);
+    registrations = Array.isArray(payload) ? payload : (payload.data || []);
+  } catch (error) {
+    console.error('Erro ao carregar inscritos do evento:', error);
+    registrations = [];
   }
+
+  renderRegistrationsTable();
 }
 
 function resetEventForm() {
+  const dateRows = Array.from(document.querySelectorAll('#datas-wrapper .data-group'));
+  dateRows.slice(1).forEach((row) => row.remove());
+
   document.getElementById('event-id').value = '';
   document.getElementById('event-title').value = '';
   document.getElementById('event-description').value = '';
   document.getElementById('event-start').value = '';
   document.getElementById('event-end').value = '';
+  document.querySelectorAll('input[name="course_start_dates[]"]').forEach((el) => { el.value = ''; });
+  document.querySelectorAll('input[name="course_end_dates[]"]').forEach((el) => { el.value = ''; });
   document.getElementById('event-location').value = '';
   document.getElementById('event-price').value = '';
   document.getElementById('event-pix').value = '';
@@ -2130,6 +2346,9 @@ function resetEventForm() {
 }
 
 function fillEventForm(ev) {
+  const dateRows = Array.from(document.querySelectorAll('#datas-wrapper .data-group'));
+  dateRows.slice(1).forEach((row) => row.remove());
+
   document.getElementById('event-id').value = ev.id || '';
   document.getElementById('event-title').value = ev.title || '';
   document.getElementById('event-description').value = ev.description || '';
@@ -2138,6 +2357,12 @@ function fillEventForm(ev) {
     if (ev.start_date) document.getElementById('event-start').value = new Date(ev.start_date).toISOString().slice(0,16);
     if (ev.end_date) document.getElementById('event-end').value = new Date(ev.end_date).toISOString().slice(0,16);
   } catch (e) {}
+
+  const courseStartInputs = document.querySelectorAll('input[name="course_start_dates[]"]');
+  const courseEndInputs = document.querySelectorAll('input[name="course_end_dates[]"]');
+  if (courseStartInputs[0]) courseStartInputs[0].value = '';
+  if (courseEndInputs[0]) courseEndInputs[0].value = '';
+
   document.getElementById('event-location').value = ev.location || '';
   document.getElementById('event-price').value = ev.price || '';
   document.getElementById('event-pix').value = ev.pix_key || '';
@@ -2162,6 +2387,12 @@ document.addEventListener('click', async (ev) => {
     return;
   }
 
+  if (action === 'registrations') {
+    openRegistrationsModal(theEvent);
+    await loadRegistrationsByEvent(theEvent.id);
+    return;
+  }
+
   if (action === 'delete') {
     const confirmed = window.confirm(`Deseja remover o evento "${theEvent.title}"?`);
     if (!confirmed) return;
@@ -2179,14 +2410,143 @@ document.addEventListener('click', async (ev) => {
 // Form submit handling
 const eventForm = document.getElementById('event-form');
 if (eventForm) {
+  const registrationsModalClose = document.getElementById('registrations-modal-close');
+  const registrationEditClose = document.getElementById('registration-edit-close');
+  const registrationEditCancel = document.getElementById('registration-edit-cancel');
+  const registrationsModal = document.getElementById('registrations-modal');
+  const registrationEditForm = document.getElementById('registration-edit-form');
+
+  if (registrationsModalClose) {
+    registrationsModalClose.addEventListener('click', () => closeRegistrationsModal());
+  }
+
+  if (registrationsModal) {
+    registrationsModal.addEventListener('click', (ev) => {
+      if (ev.target === registrationsModal) {
+        closeRegistrationsModal();
+      }
+    });
+  }
+
+  if (registrationEditClose) {
+    registrationEditClose.addEventListener('click', () => closeRegistrationEditModal());
+  }
+
+  if (registrationEditCancel) {
+    registrationEditCancel.addEventListener('click', () => closeRegistrationEditModal());
+  }
+
+  document.addEventListener('click', async (ev) => {
+    const trigger = ev.target.closest && ev.target.closest('[data-registration-action]');
+    if (!trigger) return;
+
+    const action = trigger.dataset.registrationAction;
+    const registrationId = trigger.dataset.registrationId;
+    const selected = registrations.find((r) => String(r.id) === String(registrationId));
+    if (!selected) return;
+
+    if (action === 'edit') {
+      openRegistrationEditModal(selected);
+      return;
+    }
+
+    if (action === 'delete') {
+      const confirmed = window.confirm(`Deseja excluir a inscrição de ${selected.name}?`);
+      if (!confirmed) return;
+
+      try {
+        await adminFetch(`/admin/registrations/${selected.id}`, { method: 'DELETE' });
+        await loadRegistrationsByEvent(selectedEventForRegistrations?.id);
+        await reloadEvents();
+      } catch (error) {
+        alert(error.message || 'Erro ao excluir inscrição.');
+      }
+    }
+  });
+
+  if (registrationEditForm) {
+    registrationEditForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+
+      const registrationId = document.getElementById('registration-edit-id').value;
+      const payload = {
+        name: document.getElementById('registration-edit-name').value.trim(),
+        email: document.getElementById('registration-edit-email').value.trim(),
+        whatsapp: document.getElementById('registration-edit-whatsapp').value.trim(),
+        cpf: document.getElementById('registration-edit-cpf').value.trim(),
+        institution: document.getElementById('registration-edit-institution').value.trim(),
+        notes: document.getElementById('registration-edit-notes').value.trim(),
+      };
+
+      try {
+        await adminFetch(`/admin/registrations/${registrationId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        setStatus('registration-edit-status', 'Inscrição atualizada com sucesso.', 'success');
+        await loadRegistrationsByEvent(selectedEventForRegistrations?.id);
+        await reloadEvents();
+        closeRegistrationEditModal();
+      } catch (error) {
+        setStatus('registration-edit-status', error.message || 'Erro ao atualizar inscrição.', 'error');
+      }
+    });
+  }
+
+  const datesContainer = document.getElementById('datas-wrapper');
+  const addDateButton = document.getElementById('btn-add-data');
+
+  if (addDateButton && datesContainer) {
+    addDateButton.addEventListener('click', () => {
+      const templateRow = datesContainer.querySelector('.data-group');
+      if (!templateRow) return;
+
+      const row = templateRow.cloneNode(true);
+      row.querySelectorAll('input').forEach((input) => {
+        input.value = '';
+      });
+
+      const removeButton = row.querySelector('[data-remove-course-date]');
+      if (removeButton) {
+        removeButton.classList.remove('hidden');
+      }
+
+      datesContainer.appendChild(row);
+    });
+
+    datesContainer.addEventListener('click', (event) => {
+      const removeButton = event.target.closest('[data-remove-course-date]');
+      if (!removeButton) return;
+
+      const rows = datesContainer.querySelectorAll('.data-group');
+      if (rows.length <= 1) return;
+
+      const row = removeButton.closest('.data-group');
+      if (row) {
+        row.remove();
+      }
+    });
+  }
+
   eventForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('event-id').value;
+    const courseStartDates = Array.from(document.querySelectorAll('input[name="course_start_dates[]"]'))
+      .map((el) => el.value)
+      .filter(Boolean);
+    const courseEndDates = Array.from(document.querySelectorAll('input[name="course_end_dates[]"]'))
+      .map((el) => el.value)
+      .filter(Boolean);
+
     const payload = {
       title: document.getElementById('event-title').value.trim(),
       description: document.getElementById('event-description').value.trim(),
       start_date: document.getElementById('event-start').value,
       end_date: document.getElementById('event-end').value,
+      course_start_dates: courseStartDates,
+      course_end_dates: courseEndDates,
       location: document.getElementById('event-location').value.trim(),
       price: document.getElementById('event-price').value ? Number(document.getElementById('event-price').value.replace(',', '.')) : 0,
       pix_key: document.getElementById('event-pix').value.trim(),
@@ -2197,6 +2557,7 @@ if (eventForm) {
       const method = id ? 'PUT' : 'POST';
       const endpoint = id ? `/admin/events/${id}` : '/admin/events';
       await adminFetch(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+
       setStatus('event-status', id ? 'Evento atualizado.' : 'Evento criado com sucesso.', 'success');
       resetEventForm();
       await reloadEvents();
@@ -2204,27 +2565,6 @@ if (eventForm) {
       setStatus('event-status', err.message || 'Erro ao salvar evento.', 'error');
     }
   });
-
-document.addEventListener('click', async (ev) => {
-  const trigger = ev.target.closest && ev.target.closest('[data-inscrito-action]');
-  if (!trigger) return;
-
-  const action = trigger.dataset.inscritoAction;
-  const inscritoId = trigger.dataset.inscritoId;
-
-  if (action === 'delete') {
-    const confirmed = window.confirm('Deseja remover esse inscrito?');
-    if (!confirmed) return;
-
-    try {
-      await adminFetch(`/admin/inscritos/${inscritoId}`, { method: 'DELETE' });
-      setStatus('event-status', 'Inscrito removido com sucesso.', 'success');
-      await reloadInscritos();
-    } catch (err) {
-      setStatus('event-status', err.message || 'Erro ao remover inscrito.', 'error');
-    }
-  }
-});
 
   const cancelBtn = document.getElementById('event-cancel-edit');
   if (cancelBtn) cancelBtn.addEventListener('click', (ev) => { ev.preventDefault(); resetEventForm(); setStatus('event-status', 'Edição cancelada.', 'success'); });

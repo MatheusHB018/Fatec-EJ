@@ -13,13 +13,14 @@ class Event extends Model
     use HasFactory;
 
     // expose computed attribute to array/json
-    protected $appends = ['is_currently_active'];
+    protected $appends = ['is_currently_active', 'formatted_date'];
 
     protected $fillable = [
         'title',
         'description',
         'start_date',
         'end_date',
+        'course_schedules',
         'location',
         'registration_type',
         'entry_type',
@@ -36,6 +37,7 @@ class Event extends Model
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'course_schedules' => 'array',
         'price' => 'decimal:2',
         'is_active' => 'boolean',
         'quantity' => 'integer',
@@ -73,6 +75,35 @@ class Event extends Model
         });
     }
 
+    public function getFormattedDateAttribute(): ?string
+    {
+        try {
+            $start = $this->start_date instanceof Carbon
+                ? $this->start_date
+                : ($this->start_date ? Carbon::parse($this->start_date) : null);
+
+            $end = $this->end_date instanceof Carbon
+                ? $this->end_date
+                : ($this->end_date ? Carbon::parse($this->end_date) : null);
+
+            if (! $start) {
+                return null;
+            }
+
+            if (! $end) {
+                return $start->format('d/m/Y - H:i');
+            }
+
+            if ($start->isSameDay($end)) {
+                return sprintf('%s - %s as %s', $start->format('d/m/Y'), $start->format('H:i'), $end->format('H:i'));
+            }
+
+            return sprintf('%s ate %s', $start->format('d/m/Y - H:i'), $end->format('d/m/Y - H:i'));
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     /**
      * Local scope to filter events that are active right now (start_date <= now <= end_date).
      */
@@ -81,5 +112,10 @@ class Event extends Model
         $now = Carbon::now();
         return $query->where('start_date', '<=', $now)
                      ->where('end_date', '>=', $now);
+    }
+
+    public function registrations()
+    {
+        return $this->hasMany(Registration::class);
     }
 }

@@ -18,38 +18,71 @@
         <a href="../index.html" class="flex items-center gap-3">
           <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo EJ FATEC" class="h-12 w-auto" />
         </a>
-        <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-500">
+
+        <!-- Mobile Menu Button -->
+        <button id="mobile-menu-btn" class="block md:hidden p-2 rounded-lg hover:bg-slate-100 transition">
+          <i class="fa-solid fa-bars text-2xl text-slate-700"></i>
+        </button>
+
+        <nav id="main-menu" class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-500">
           <a href="../index.html#inicio" class="hover:text-pink-700">Início</a>
           <a href="../index.html#sobre" class="hover:text-pink-700">Sobre</a>
           <a href="../index.html#servicos" class="hover:text-pink-700">Serviços</a>
           <a href="../index.html#projetos" class="hover:text-pink-700">Projetos</a>
           <a href="../index.html#eventos" class="hover:text-pink-700">Eventos</a>
           <a href="../index.html#contato" class="hover:text-pink-700">Contato</a>
-          <a href="produtos.html" class="hover:text-pink-700">Loja</a>
+          <a href="produtos.html" class="hidden hover:text-pink-700">Loja</a>
         </nav>
         <a href="../admin/login.html" class="rounded-lg bg-red-800 px-4 py-2 text-white text-sm font-semibold hover:bg-red-700">Login</a>
       </div>
+
+      <!-- Mobile Menu Panel -->
+      <nav id="mobile-menu" class="hidden md:hidden absolute top-20 left-0 right-0 bg-white border-b border-slate-200 shadow-lg p-6 flex flex-col gap-4">
+        <a href="../index.html#inicio" class="text-sm font-semibold text-slate-700 hover:text-red-800">Início</a>
+        <a href="../index.html#sobre" class="text-sm font-semibold text-slate-700 hover:text-red-800">Sobre</a>
+        <a href="../index.html#servicos" class="text-sm font-semibold text-slate-700 hover:text-red-800">Serviços</a>
+        <a href="../index.html#projetos" class="text-sm font-semibold text-slate-700 hover:text-red-800">Projetos</a>
+        <a href="../index.html#eventos" class="text-sm font-semibold text-slate-700 hover:text-red-800">Eventos</a>
+        <a href="../index.html#contato" class="text-sm font-semibold text-slate-700 hover:text-red-800">Contato</a>
+        <a href="produtos.html" class="hidden text-sm font-semibold text-red-800 hover:text-red-900">Loja</a>
+      </nav>
     </div>
   </header>
 
   <main class="py-12">
     <div class="max-w-7xl mx-auto px-6 lg:px-8">
-      <h1 class="text-4xl font-extrabold text-center text-slate-900">Inscrição: <span id="event-details-title">[Nome do Evento Exemplo]</span></h1>
-      <div class="mt-10 grid lg:grid-cols-2 gap-8">
+      <h1 class="text-2xl md:text-4xl font-extrabold text-center text-slate-900"> <span id="event-details-title">[Nome do Evento Exemplo]</span></h1>
+      <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
         <aside class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 class="text-xl font-bold text-slate-900">Informações do Evento</h2>
           <ul class="mt-4 space-y-3 text-slate-700">
-            <li><i class="fa-regular fa-calendar-days mr-2 text-red-800"></i><strong>Data / Hora:</strong> <span id="event-details-date">--</span> às <span id="event-details-time">--</span></li>
+            <li class="flex items-start gap-2">
+              <i class="fa-regular fa-calendar-days mt-1 text-red-800"></i>
+              <div>
+                <strong>Data / Hora:</strong>
+                <ul id="event-details-schedules" class="mt-1 space-y-1 text-gray-700">
+                  <li>--</li>
+                </ul>
+              </div>
+            </li>
             <li><i class="fa-solid fa-location-dot mr-2 text-red-800"></i><strong>Local:</strong> <span id="event-details-location">--</span></li>
             <li><i class="fa-solid fa-circle-info mr-2 text-red-800"></i><strong>Descrição:</strong> <span id="event-details-description">--</span></li>
-            <li><i class="fa-solid fa-user-tie mr-2 text-red-800"></i><strong>Speaker:</strong> <span id="event-details-speaker">--</span></li>
           </ul>
 
-          <h3 class="mt-8 text-xl font-bold text-slate-900">Instruções de Pagamento</h3>
-          <div class="mt-3 text-slate-700 space-y-2 text-sm">
+          <div class="mt-5">
+            <label for="event-start-datetime-select" class="mb-2 block text-sm font-semibold text-slate-700">
+              Data e Horário de Início
+            </label>
+            <select id="event-start-datetime-select" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-slate-800 focus:border-red-800 focus:outline-none focus:ring-2 focus:ring-red-800">
+              <option value="">Selecione uma opção</option>
+            </select>
+          </div>
+
+          <h3 id="event-payment-title" class="mt-8 text-xl font-bold text-slate-900">Instruções de Pagamento</h3>
+          <div id="event-pix-section" class="mt-3 text-slate-700 space-y-2 text-sm">
             <p><strong>PIX</strong></p>
             <p>Valor: <span id="event-details-price">R$ 0,00</span></p>
-            <p>Chave PIX: <strong id="event-details-pix">CNPJ 12.345.678/0001-90</strong></p>
+            <p id="event-details-pix-row">Chave PIX: <strong id="event-details-pix">--</strong></p>
             <p>Faça o PIX antes de preencher e anexe o comprovante.</p>
           </div>
         </aside>
@@ -139,5 +172,6 @@
   </footer>
 
   <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/mobile-menu.js"></script>
 </body>
 </html>

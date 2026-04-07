@@ -13,6 +13,7 @@ class Setting extends Model
      * Campos que podem ser preenchidos em massa.
      */
     protected $fillable = [
+        'site_name',
         'management_name',
         'hero_title',
         'hero_subtitle',

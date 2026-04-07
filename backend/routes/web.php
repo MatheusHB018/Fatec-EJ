@@ -1,4 +1,6 @@
 <?php
+
+use App\Http\Controllers\FileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,3 +15,6 @@ Route::get('/', function () {
         'status' => 'ok',
     ]);
 });
+
+Route::get('/receipts/{filename}', [FileController::class, 'showReceipt'])
+    ->where('filename', '[A-Za-z0-9._-]+');

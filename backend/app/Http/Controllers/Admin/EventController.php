@@ -11,38 +11,40 @@ class EventController extends Controller
 {
     public function index()
     {
-        // return paginated list for admin
-        return Event::orderBy('start_date', 'desc')->paginate(20);
+        return Event::withCount('registrations')
+            ->orderBy('start_date', 'desc')
+            ->get();
     }
 
     // Public listing of active/upcoming events for the public site
     public function publicIndex()
     {
-        // Public listing: return only currently active (ongoing) events
-        // i.e. events that are marked active, with frontend showing seu status baseado nas datas
-        // start_date and end_date serão usados pelo frontend para calcular se o evento está agendado, em andamento ou encerrado.
-           $events = Event::where('is_active', '1')
-              ->orderBy('start_date', 'asc')
-              ->get();
+        try {
+            $events = Event::where('is_active', true)
+                ->orderBy('start_date', 'asc')
+                ->get();
 
-        return response()->json(['events' => $events]);
+            return response()->json($events);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([]);
+        }
     }
 
     public function store(Request $request)
     {
-        // accept both 'type' and 'entry_type' from frontend
-        $payload = $request->all();
-        if (isset($payload['type']) && !isset($payload['entry_type'])) {
-            $payload['entry_type'] = $payload['type'];
+        if ($request->has('type') && !$request->has('entry_type')) {
+            $request->merge(['entry_type' => $request->input('type')]);
         }
 
-    $data = $request->only(['title','description','start_date','end_date','location','entry_type','modality','category','price','quantity','valid_from','valid_to','pix_key','is_active']);
+        $data = $request->only(['title','description','start_date','end_date','location','entry_type','modality','category','price','quantity','valid_from','valid_to','pix_key','is_active']);
 
         $validator = Validator::make($data, [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'start_date' => 'required|date',
-            'end_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
             'location' => 'nullable|string|max:255',
             'entry_type' => 'nullable|in:gratuita,paga,doacao',
             'modality' => 'nullable|string',
@@ -59,17 +61,23 @@ class EventController extends Controller
             return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
 
-        if (isset($data['start_date']) && isset($data['end_date'])) {
-            if (strtotime($data['start_date']) >= strtotime($data['end_date'])) {
-                return response()->json(['message' => 'start_date must be before end_date'], 422);
-            }
-        }
-
         if (!empty($data['valid_from']) && !empty($data['valid_to'])) {
             if (strtotime($data['valid_from']) > strtotime($data['valid_to'])) {
                 return response()->json(['message' => 'valid_from must be before or equal to valid_to'], 422);
             }
         }
+
+        // Build course_schedules from paired arrays, ignoring incomplete entries
+        $startDates = $request->input('course_start_dates', []);
+        $endDates   = $request->input('course_end_dates', []);
+        $schedules  = [];
+        foreach ($startDates as $i => $start) {
+            $end = $endDates[$i] ?? null;
+            if (!empty($start) && !empty($end)) {
+                $schedules[] = ['start' => $start, 'end' => $end];
+            }
+        }
+        $data['course_schedules'] = !empty($schedules) ? $schedules : null;
 
         // if admin didn't explicitly set is_active, enable by default so new events appear on the public site
         if (!array_key_exists('is_active', $data)) {
@@ -83,18 +91,17 @@ class EventController extends Controller
 
     public function update(Request $request, Event $event)
     {
-        $payload = $request->all();
-        if (isset($payload['type']) && !isset($payload['entry_type'])) {
-            $payload['entry_type'] = $payload['type'];
+        if ($request->has('type') && !$request->has('entry_type')) {
+            $request->merge(['entry_type' => $request->input('type')]);
         }
 
-    $data = $request->only(['title','description','start_date','end_date','location','entry_type','modality','category','price','quantity','valid_from','valid_to','pix_key','is_active']);
+        $data = $request->only(['title','description','start_date','end_date','location','entry_type','modality','category','price','quantity','valid_from','valid_to','pix_key','is_active']);
 
         $validator = Validator::make($data, [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'start_date' => 'required|date',
-            'end_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
             'location' => 'nullable|string|max:255',
             'entry_type' => 'nullable|in:gratuita,paga,doacao',
             'modality' => 'nullable|string',
@@ -111,18 +118,23 @@ class EventController extends Controller
             return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
 
-        if (isset($data['start_date']) && isset($data['end_date'])) {
-            if (strtotime($data['start_date']) >= strtotime($data['end_date'])) {
-                return response()->json(['message' => 'start_date must be before end_date'], 422);
-            }
-        }
-
         if (!empty($data['valid_from']) && !empty($data['valid_to'])) {
             if (strtotime($data['valid_from']) > strtotime($data['valid_to'])) {
                 return response()->json(['message' => 'valid_from must be before or equal to valid_to'], 422);
             }
         }
 
+        // Build course_schedules from paired arrays, ignoring incomplete entries
+        $startDates = $request->input('course_start_dates', []);
+        $endDates   = $request->input('course_end_dates', []);
+        $schedules  = [];
+        foreach ($startDates as $i => $start) {
+            $end = $endDates[$i] ?? null;
+            if (!empty($start) && !empty($end)) {
+                $schedules[] = ['start' => $start, 'end' => $end];
+            }
+        }
+        $data['course_schedules'] = !empty($schedules) ? $schedules : null;
 
         $event->update($data);
 
