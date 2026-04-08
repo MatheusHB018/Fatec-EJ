@@ -40,11 +40,13 @@
       <nav id="mobile-menu" class="hidden md:hidden absolute top-20 left-0 right-0 bg-white border-b border-slate-200 shadow-lg p-6 flex flex-col gap-4">
         <a href="../index.html#inicio" class="text-sm font-semibold text-slate-700 hover:text-red-800">Início</a>
         <a href="../index.html#sobre" class="text-sm font-semibold text-slate-700 hover:text-red-800">Sobre</a>
+        <a href="../index.html#equipe" class="text-sm font-semibold text-slate-700 hover:text-red-800">Equipe</a>
         <a href="../index.html#servicos" class="text-sm font-semibold text-slate-700 hover:text-red-800">Serviços</a>
+        <a href="../index.html#pilares" class="text-sm font-semibold text-slate-700 hover:text-red-800">Pilares</a>
         <a href="../index.html#projetos" class="text-sm font-semibold text-slate-700 hover:text-red-800">Projetos</a>
         <a href="../index.html#eventos" class="text-sm font-semibold text-slate-700 hover:text-red-800">Eventos</a>
+        <a href="../index.html#editais" class="text-sm font-semibold text-slate-700 hover:text-red-800">Editais</a>
         <a href="../index.html#contato" class="text-sm font-semibold text-slate-700 hover:text-red-800">Contato</a>
-        <a href="produtos.html" class="hidden text-sm font-semibold text-red-800 hover:text-red-900">Loja</a>
       </nav>
     </div>
   </header>
@@ -113,6 +115,51 @@
               <label for="registration-cpf" class="block text-sm font-medium text-slate-700">CPF</label>
               <input id="registration-cpf" name="cpf" type="text" required maxlength="14" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="000.000.000-00" />
             </div>
+            <!-- Endereço -->
+            <div>
+              <label for="cep" class="block text-sm font-medium text-slate-700">CEP</label>
+              <input id="cep" name="cep" type="text" maxlength="9" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="00000-000" />
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div class="md:col-span-2">
+                <label for="street" class="block text-sm font-medium text-slate-700">Logradouro</label>
+                <input id="street" name="street" type="text" readonly class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 bg-slate-100" />
+              </div>
+              <div>
+                <label for="number" class="block text-sm font-medium text-slate-700">Número</label>
+                <input id="number" name="number" type="text" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Ex: 123" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label for="neighborhood" class="block text-sm font-medium text-slate-700">Bairro</label>
+                <input id="neighborhood" name="neighborhood" type="text" readonly class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 bg-slate-100" />
+              </div>
+              <div>
+                <label for="city" class="block text-sm font-medium text-slate-700">Cidade</label>
+                <input id="city" name="city" type="text" readonly class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 bg-slate-100" />
+              </div>
+              <div>
+                <label for="state" class="block text-sm font-medium text-slate-700">Estado (UF)</label>
+                <input id="state" name="state" type="text" readonly maxlength="2" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 bg-slate-100" />
+              </div>
+            </div>
+            <!-- Curso FATEC (Opcional) -->
+            <div>
+              <label for="fatec_course" class="block text-sm font-medium text-slate-700">Curso (Fatec)</label>
+              <select id="fatec_course" name="fatec_course" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2">
+                <option value="">Selecione seu curso</option>
+                <option value="Não faço parte do Instituto Fatec">Não faço parte do Instituto Fatec</option>
+                <option value="Agronegócio">Agronegócio</option>
+                <option value="Análise e Desenvolvimento de Sistemas">Análise e Desenvolvimento de Sistemas</option>
+                <option value="Análise e Desenvolvimento de Sistemas – AMS">Análise e Desenvolvimento de Sistemas – AMS</option>
+                <option value="Gestão de Eventos">Gestão de Eventos</option>
+                <option value="Gestão Empresarial">Gestão Empresarial</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Processos Gerenciais – AMS">Processos Gerenciais – AMS</option>
+                <option value="Produção Agropecuária">Produção Agropecuária</option>
+              </select>
+            </div>
             <div>
               <label for="registration-comprovante" class="block text-sm font-medium text-slate-700">Comprovante (PNG/JPEG/PDF)</label>
               <input id="registration-comprovante" name="comprovante" type="file" accept="image/png,image/jpeg,application/pdf" required class="mt-1 block w-full" />
@@ -133,14 +180,15 @@
     <div class="max-w-7xl mx-auto px-6 lg:px-8 py-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
       <div>
         <a href="../index.html#inicio" class="flex items-center gap-3">
-          <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo EJ FATEC" class="h-14 w-auto object-contain brightness-0 invert" />
+          <img src="http://empresajuniorfatec.com.br/images/logo.png" alt="Logo Empresa Júnior FATEC" class="h-14 w-auto object-contain brightness-0 invert" />
           <span class="hidden text-xl font-bold text-white sm:inline">Empresa Júnior FATEC</span>
         </a>
         <p class="mt-4 text-slate-400">Empresa Júnior da Faculdade de Tecnologia. Soluções digitais com qualidade acadêmica.</p>
       </div>
+
       <div>
         <h4 class="font-bold text-white">Links Rápidos</h4>
-        <ul class="mt-4 space-y-2 text-slate-400">
+        <ul id="footer-quick-links" class="mt-4 space-y-2 text-slate-400">
           <li><a href="../index.html#inicio" class="hover:text-red-300">Início</a></li>
           <li><a href="../index.html#sobre" class="hover:text-red-300">Sobre</a></li>
           <li><a href="../index.html#servicos" class="hover:text-red-300">Serviços</a></li>
@@ -148,26 +196,41 @@
           <li><a href="../index.html#contato" class="hover:text-red-300">Contato</a></li>
         </ul>
       </div>
+
       <div>
         <h4 class="font-bold text-white">Serviços</h4>
-        <ul class="mt-4 space-y-2 text-slate-400">
+        <ul id="footer-services" class="mt-4 space-y-2 text-slate-400">
           <li>Desenvolvimento Web</li>
           <li>Apps Mobile</li>
           <li>Design UI/UX</li>
           <li>Consultoria TI</li>
         </ul>
       </div>
+
       <div>
         <h4 class="font-bold text-white">Redes Sociais</h4>
         <div class="mt-4 flex gap-3">
           <a href="#" class="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-red-800 transition-colors"><i class="fa-brands fa-instagram"></i></a>
           <a href="#" class="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-red-800 transition-colors"><i class="fa-brands fa-linkedin-in"></i></a>
-          <a href="#" class="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-red-800 transition-colors"><i class="fa-brands fa-github"></i></a>
+        </div>
+
+        <p class="mt-6 text-xs uppercase tracking-wider text-slate-500">Desenvolvido por</p>
+        <div class="mt-2 inline-flex items-center rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3">
+          <img src="../assets/img/LogoMB.png" alt="Logo Matheus Bispo" class="h-12 w-auto object-contain" />
         </div>
       </div>
     </div>
+
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 pb-5">
+      <div id="management-name" class="gestao-placeholder">
+        Falcoes 2026 - 2027
+      </div>
+    </div>
+
     <div class="border-t border-slate-800">
-      <div class="max-w-7xl mx-auto px-6 lg:px-8 py-5 text-center text-xs text-slate-500">© 2026 Empresa Júnior FATEC. Todos os direitos reservados.</div>
+      <div id="copyright-text" class="max-w-7xl mx-auto px-6 lg:px-8 py-5 text-center text-xs text-slate-500">
+        © 2026 Empresa Júnior FATEC. Todos os direitos reservados.
+      </div>
     </div>
   </footer>
 

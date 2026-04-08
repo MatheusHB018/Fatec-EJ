@@ -4,23 +4,28 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
-        if (! $token = auth('api')->attempt($validated)) {
+        $credentials = $request->only('email', 'password');
+
+        $token = Auth::guard('api')->attempt($credentials);
+
+        if (! $token) {
             return response()->json([
                 'message' => 'Credenciais inválidas.',
             ], 401);
         }
 
-        $user = auth('api')->user();
+        $user = Auth::guard('api')->user();
 
         return response()->json([
             'message' => 'Login realizado com sucesso.',
@@ -35,7 +40,7 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = auth('api')->user();
+        $user = Auth::guard('api')->user();
 
         if (! $user) {
             return response()->json([
@@ -54,7 +59,7 @@ class AuthController extends Controller
 
     public function logout(): JsonResponse
     {
-        auth('api')->logout();
+        Auth::guard('api')->logout();
 
         return response()->json([
               'message' => 'Logout realizado com sucesso',

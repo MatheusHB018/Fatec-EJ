@@ -286,10 +286,69 @@ function initEventRegistrationForm() {
     });
   }
 
+  // ViaCEP isolado para evitar conflito com outros listeners.
+  const cepInput = document.getElementById('cep');
+  const streetInput = document.getElementById('street');
+  const numberInput = document.getElementById('number');
+  const neighborhoodInput = document.getElementById('neighborhood');
+  const cityInput = document.getElementById('city');
+  const stateInput = document.getElementById('state');
+  const fatecCourseInput = document.getElementById('fatec_course');
+
+  const resolveCep = async () => {
+    if (!cepInput) return;
+
+    const cepValue = String(cepInput.value || '').replace(/\D/g, '');
+    if (cepValue.length !== 8) return;
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cepValue}/json/`);
+      const data = await response.json();
+
+      if (data && !data.erro) {
+        cepInput.value = cepValue.replace(/(\d{5})(\d{3})/, '$1-$2');
+        if (streetInput) streetInput.value = data.logradouro || '';
+        if (neighborhoodInput) neighborhoodInput.value = data.bairro || '';
+        if (cityInput) cityInput.value = data.localidade || '';
+        if (stateInput) stateInput.value = data.uf || '';
+      }
+    } catch (error) {
+      console.error('Erro ao buscar o CEP:', error);
+    }
+  };
+
+  const attachViaCep = () => {
+    if (!cepInput || cepInput.dataset.viaCepBound === '1') return;
+
+    cepInput.addEventListener('input', resolveCep);
+    cepInput.addEventListener('blur', resolveCep);
+    cepInput.dataset.viaCepBound = '1';
+  };
+
+  attachViaCep();
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    await resolveCep();
+
     const formData = new FormData(form);
+    const cepValue = cepInput ? String(cepInput.value || '').trim() : '';
+    const streetValue = streetInput ? String(streetInput.value || '').trim() : '';
+    const numberValue = numberInput ? String(numberInput.value || '').trim() : '';
+    const neighborhoodValue = neighborhoodInput ? String(neighborhoodInput.value || '').trim() : '';
+    const cityValue = cityInput ? String(cityInput.value || '').trim() : '';
+    const stateValue = stateInput ? String(stateInput.value || '').trim() : '';
+    const fatecCourseValue = fatecCourseInput ? String(fatecCourseInput.value || '').trim() : '';
+
+    formData.set('cep', cepValue);
+    formData.set('street', streetValue);
+    formData.set('number', numberValue);
+    formData.set('neighborhood', neighborhoodValue);
+    formData.set('city', cityValue);
+    formData.set('state', stateValue);
+    formData.set('fatec_course', fatecCourseValue);
+
     const cpf = formData.get('cpf') ? String(formData.get('cpf')).trim() : '';
 
     if (!isValidCpf(cpf)) {

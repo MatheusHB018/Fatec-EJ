@@ -16,6 +16,13 @@ class Registration extends Model
         'email',
         'whatsapp',
         'cpf',
+        'cep',
+        'street',
+        'number',
+        'neighborhood',
+        'city',
+        'state',
+        'fatec_course',
         'receipt_path',
         'notes',
     ];

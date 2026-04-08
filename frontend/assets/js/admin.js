@@ -1268,10 +1268,11 @@ async function adminFetch(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    if (response.status === 401 && adminPage === 'admin-dashboard') {
-      clearSession();
+    if (response.status === 401) {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      alert('Sua sessão expirou por segurança. Por favor, faça login novamente.');
       window.location.href = 'login.html';
-      throw new Error('Sua sessão expirou. Faça login novamente.');
+      throw new Error('Sua sessão expirou por segurança. Por favor, faça login novamente.');
     }
 
     // prioriza mensagem do payload se existir
@@ -2137,6 +2138,7 @@ async function initDashboardPage() {
         // Mesmo com falha no logout remoto, a sessão local deve ser encerrada.
       }
 
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
       clearSession();
       window.location.href = 'login.html';
     });
@@ -2236,8 +2238,12 @@ function openRegistrationsModal(eventItem) {
   selectedEventForRegistrations = eventItem;
   const modal = document.getElementById('registrations-modal');
   const subtitle = document.getElementById('registrations-modal-subtitle');
+  const printButton = document.getElementById('registrations-modal-print');
   if (subtitle) {
     subtitle.textContent = `Evento: ${eventItem?.title || '-'}`;
+  }
+  if (printButton) {
+    printButton.setAttribute('onclick', `printPdfList(${JSON.stringify(eventItem?.title || 'Evento')})`);
   }
   if (modal) {
     modal.classList.remove('hidden');
@@ -2257,13 +2263,22 @@ function openRegistrationEditModal(registration) {
   const modal = document.getElementById('registration-edit-modal');
   if (!modal) return;
 
-  document.getElementById('registration-edit-id').value = registration.id;
-  document.getElementById('registration-edit-name').value = registration.name || '';
-  document.getElementById('registration-edit-email').value = registration.email || '';
-  document.getElementById('registration-edit-whatsapp').value = registration.whatsapp || '';
-  document.getElementById('registration-edit-cpf').value = registration.cpf || '';
-  document.getElementById('registration-edit-institution').value = registration.institution || '';
-  document.getElementById('registration-edit-notes').value = registration.notes || '';
+  const reg = registration;
+
+  document.getElementById('registration-edit-id').value = reg.id;
+  document.getElementById('registration-edit-name').value = reg.name || '';
+  document.getElementById('registration-edit-email').value = reg.email || '';
+  document.getElementById('registration-edit-whatsapp').value = reg.whatsapp || '';
+  document.getElementById('registration-edit-cpf').value = reg.cpf || '';
+  document.getElementById('registration-edit-institution').value = reg.institution || '';
+  document.getElementById('registration-edit-notes').value = reg.notes || '';
+  document.getElementById('edit_fatec_course').value = reg.fatec_course || '';
+  document.getElementById('edit_cep').value = reg.cep || '';
+  document.getElementById('edit_street').value = reg.street || '';
+  document.getElementById('edit_number').value = reg.number || '';
+  document.getElementById('edit_neighborhood').value = reg.neighborhood || '';
+  document.getElementById('edit_city').value = reg.city || '';
+  document.getElementById('edit_state').value = reg.state || '';
 
   const status = document.getElementById('registration-edit-status');
   if (status) {
@@ -2288,7 +2303,7 @@ function renderRegistrationsTable() {
   if (!tbody) return;
 
   if (!registrations.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-sm text-slate-500">Nenhum inscrito encontrado para este evento.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-center text-sm text-slate-500">Nenhum inscrito encontrado para este evento.</td></tr>';
     return;
   }
 
@@ -2297,17 +2312,19 @@ function renderRegistrationsTable() {
     return `
       <tr class="border-b border-gray-100 align-top">
         <td class="px-3 py-3 font-medium text-slate-800">${escapeHtml(r.name)}</td>
-        <td class="px-3 py-3 text-slate-600">${escapeHtml(r.email)}</td>
-        <td class="px-3 py-3 text-slate-600">${escapeHtml(r.whatsapp)}</td>
-        <td class="px-3 py-3 text-slate-600">${escapeHtml(r.institution || '-')}</td>
-        <td class="px-3 py-3 text-slate-600">${escapeHtml(r.notes || '-')}</td>
+        <td class="px-3 py-3 text-slate-600 text-sm">${escapeHtml(r.email)}</td>
+        <td class="px-3 py-3 text-slate-600 text-sm">${escapeHtml(r.whatsapp)}</td>
+        <td class="px-3 py-3 text-slate-600 text-sm">${escapeHtml(r.institution || '-')}</td>
+        <td class="px-3 py-3 text-slate-600 text-sm">${escapeHtml(r.fatec_course || '-')}</td>
+        <td class="px-3 py-3 text-slate-600 text-sm">${r.street ? `${escapeHtml(r.street)}, ${escapeHtml(r.number || 'S/N')} - ${escapeHtml(r.city || '')}/${escapeHtml(r.state || '')}` : '-'}</td>
+        <td class="px-3 py-3 text-slate-600 text-sm">${escapeHtml(r.notes || '-')}</td>
         <td class="px-3 py-3">
           <div class="flex flex-wrap gap-2">
             ${receiptUrl
-              ? `<a href="${escapeHtml(receiptUrl)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline"><i class="fa-solid fa-file-invoice"></i> Ver Anexo</a>`
-              : `<span class="text-gray-400 text-sm"><i class="fa-solid fa-file-circle-xmark"></i> Não enviado</span>`}
-            <button type="button" data-registration-action="edit" data-registration-id="${r.id}" class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-red-800 hover:text-red-800">Editar</button>
-            <button type="button" data-registration-action="delete" data-registration-id="${r.id}" class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50">Excluir</button>
+              ? `<a href="${escapeHtml(receiptUrl)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-xs"><i class="fa-solid fa-file-invoice"></i> Ver Anexo</a>`
+              : `<span class="text-gray-400 text-xs"><i class="fa-solid fa-file-circle-xmark"></i> Não enviado</span>`}
+            <button type="button" data-registration-action="edit" data-registration-id="${r.id}" class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:border-red-800 hover:text-red-800">Editar</button>
+            <button type="button" data-registration-action="delete" data-registration-id="${r.id}" class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Excluir</button>
           </div>
         </td>
       </tr>
@@ -2315,13 +2332,324 @@ function renderRegistrationsTable() {
   }).join('');
 }
 
+function printAttendanceList(eventName) {
+  if (!registrations.length) {
+    alert('Nenhum inscrito para imprimir.');
+    return;
+  }
+
+  // Sort registrations alphabetically by name
+  const sortedRegistrations = [...registrations].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Não foi possível abrir a janela de impressão. Verifique os bloqueadores de pop-up.');
+    return;
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Lista de Chamada - ${escapeHtml(eventName)}</title>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          padding: 20px;
+          line-height: 1.4;
+        }
+        h1 {
+          text-align: center;
+          font-size: 18px;
+          margin-bottom: 20px;
+          font-weight: bold;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          border: 1px solid #000;
+        }
+        th, td {
+          border: 1px solid #000;
+          padding: 8px;
+          text-align: left;
+        }
+        th {
+          background-color: #f5f5f5;
+          font-weight: bold;
+          font-size: 12px;
+        }
+        td {
+          font-size: 11px;
+          vertical-align: top;
+        }
+        .numero {
+          width: 5%;
+          text-align: center;
+        }
+        .nome {
+          width: 40%;
+        }
+        .documento {
+          width: 25%;
+        }
+        .assinatura {
+          width: 30%;
+          height: 40px;
+        }
+        @media print {
+          body {
+            padding: 0;
+          }
+          button {
+            display: none;
+          }
+          .no-print {
+            display: none;
+          }
+        }
+        .print-button-container {
+          margin-bottom: 15px;
+          text-align: center;
+        }
+        button {
+          padding: 8px 16px;
+          font-size: 14px;
+          background-color: #333;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        button:hover {
+          background-color: #555;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-button-container no-print">
+        <button onclick="window.print()">Imprimir</button>
+        <button onclick="window.close()" style="margin-left: 10px; background-color: #666;">Fechar</button>
+      </div>
+      <h1>Lista de Chamada - ${escapeHtml(eventName)}</h1>
+      <table>
+        <thead>
+          <tr>
+            <th class="numero">Nº</th>
+            <th class="nome">Nome do Inscrito</th>
+            <th class="documento">Documento (CPF)</th>
+            <th class="assinatura">Assinatura</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sortedRegistrations.map((reg, index) => `
+            <tr>
+              <td class="numero">${index + 1}</td>
+              <td class="nome">${escapeHtml(reg.name || '-')}</td>
+              <td class="documento">${escapeHtml(reg.cpf || '-')}</td>
+              <td class="assinatura"></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+  printWindow.focus();
+  
+  // Small delay to ensure rendering before print
+  setTimeout(() => {
+    printWindow.print();
+  }, 250);
+}
+
+function printPdfList(eventName) {
+  if (!registrations || !registrations.length) {
+    alert('Nenhum inscrito para gerar PDF.');
+    return;
+  }
+
+  // Sort registrations alphabetically by name
+  const sortedRegistrations = [...registrations].sort((a, b) => {
+    const nameA = (a.name || '').toLowerCase();
+    const nameB = (b.name || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Não foi possível abrir a janela de impressão. Verifique os bloqueadores de pop-up.');
+    return;
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Lista de Chamada - ${escapeHtml(eventName)}</title>
+      <style>
+        @page {
+          size: A4 landscape;
+          margin: 15mm;
+        }
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          padding: 15mm;
+          line-height: 1.5;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          background: white;
+        }
+        h2 {
+          text-align: center;
+          font-size: 16px;
+          margin-bottom: 25px;
+          font-weight: bold;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        thead {
+          background-color: #f0f0f0;
+        }
+        th, td {
+          border: 1px solid #000;
+          padding: 8px;
+          text-align: left;
+          font-size: 12px;
+        }
+        th {
+          font-weight: bold;
+          background-color: #e8e8e8;
+        }
+        td {
+          vertical-align: top;
+        }
+        .numero {
+          width: 6%;
+          text-align: center;
+        }
+        .nome {
+          width: 35%;
+        }
+        .documento {
+          width: 20%;
+        }
+        .curso {
+          width: 16%;
+        }
+        .endereco {
+          width: 24%;
+        }
+        .assinatura {
+          width: 20%;
+          height: 35px;
+        }
+        @media print {
+          body {
+            padding: 0;
+            margin: 0;
+          }
+          .no-print {
+            display: none !important;
+          }
+          button {
+            display: none !important;
+          }
+        }
+        .print-controls {
+          margin-bottom: 20px;
+          text-align: center;
+        }
+        .print-controls button {
+          padding: 10px 20px;
+          font-size: 13px;
+          background-color: #333;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-right: 10px;
+        }
+        .print-controls button:hover {
+          background-color: #555;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-controls no-print">
+        <button onclick="window.print()">Imprimir / Salvar PDF</button>
+        <button onclick="window.close()" style="background-color: #666;">Fechar</button>
+      </div>
+      <h2>Lista de Chamada: ${escapeHtml(eventName)}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th class="numero">Nº</th>
+            <th class="nome">Nome</th>
+            <th class="documento">CPF</th>
+            <th class="curso">Curso (Fatec)</th>
+            <th class="endereco">Endereço</th>
+            <th class="assinatura">Assinatura</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sortedRegistrations.map((reg, index) => `
+            <tr>
+              <td class="numero">${index + 1}</td>
+              <td class="nome">${escapeHtml(reg.name || '-')}</td>
+              <td class="documento">${escapeHtml(reg.cpf || '-')}</td>
+              <td class="curso">${escapeHtml(reg.fatec_course || '-')}</td>
+              <td class="endereco">${reg.street ? `${escapeHtml(reg.street)}, ${escapeHtml(reg.number || 'S/N')} - ${escapeHtml(reg.city || '')}/${escapeHtml(reg.state || '')}` : '-'}</td>
+              <td class="assinatura"></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+  printWindow.focus();
+  
+  // Delay to ensure proper rendering before print
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
+}
+
 async function loadRegistrationsByEvent(eventId) {
   try {
     const payload = await adminFetch(`/admin/events/${eventId}/registrations`);
     registrations = Array.isArray(payload) ? payload : (payload.data || []);
+    window.currentInscriptions = registrations;
   } catch (error) {
     console.error('Erro ao carregar inscritos do evento:', error);
     registrations = [];
+    window.currentInscriptions = [];
   }
 
   renderRegistrationsTable();
@@ -2475,6 +2803,13 @@ if (eventForm) {
         whatsapp: document.getElementById('registration-edit-whatsapp').value.trim(),
         cpf: document.getElementById('registration-edit-cpf').value.trim(),
         institution: document.getElementById('registration-edit-institution').value.trim(),
+        fatec_course: document.getElementById('edit_fatec_course').value.trim(),
+        cep: document.getElementById('edit_cep').value.trim(),
+        street: document.getElementById('edit_street').value.trim(),
+        number: document.getElementById('edit_number').value.trim(),
+        neighborhood: document.getElementById('edit_neighborhood').value.trim(),
+        city: document.getElementById('edit_city').value.trim(),
+        state: document.getElementById('edit_state').value.trim(),
         notes: document.getElementById('registration-edit-notes').value.trim(),
       };
 
